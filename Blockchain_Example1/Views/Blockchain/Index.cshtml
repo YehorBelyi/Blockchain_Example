@@ -1,0 +1,68 @@
+﻿@model IEnumerable<Blockchain_Example1.Models.Block>
+
+@{
+    ViewData["Title"] = "View";
+}
+
+<h1>Index</h1>
+<p>Blockchain status: @ViewBag.IsValid</p>
+
+<form method="post" asp-action="Add">
+    <input type="text" name="data" id="data" placeholder="Enter block data"/>
+    <button type="submit">Add block</button>
+</form>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Index)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Data)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PreviousHash)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Hash)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Timestamp)
+            </th>
+            <th>@Html.DisplayNameFor(model => model.Signature)</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr class="@(ViewBag.ValidBlocks[item.Index] == true ? "table-success" : "table-danger")">
+            <td>
+                @Html.DisplayFor(modelItem => item.Index)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Data)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PreviousHash)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Hash)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Timestamp)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Signature)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id = item.Index }) |
+                @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
+                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
