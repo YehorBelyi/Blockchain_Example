@@ -8,7 +8,7 @@ namespace Blockchain_Example1.Controllers
     public class BlockchainController : Controller
     {
         private readonly ILogger<BlockchainController> _logger;
-        private static BlockchainService _blockchainService;
+        private BlockchainService _blockchainService;
 
         public BlockchainController(ILogger<BlockchainController> logger, BlockchainService blockchainService)
         {
@@ -44,7 +44,7 @@ namespace Blockchain_Example1.Controllers
 
             ViewBag.ValidBlocks = validBlocks;
             ViewBag.IsValid = chainStillValid;
-
+            ViewBag.Difficulty = BlockchainService.Difficulty;
             return View(chain);
         }
 
@@ -52,7 +52,7 @@ namespace Blockchain_Example1.Controllers
         [HttpPost]
         public IActionResult Add(string data)
         {
-            _blockchainService.AddBlock(data);
+            var ms = _blockchainService.AddBlock(data);
             return RedirectToAction("Index");
         }
 
@@ -66,6 +66,17 @@ namespace Blockchain_Example1.Controllers
         public async Task<IActionResult> Edit(int? id, string? data, string? signature)
         {
             _blockchainService.EditBlock(id, data, signature);
+            return RedirectToAction("Index");
+        }
+
+        // [27.10.25] Set mining difficulty
+        [HttpPost]
+        public IActionResult SetDifficulty(int difficulty)
+        {
+            if (difficulty < 1) difficulty = 1;
+            if (difficulty > 6) difficulty = 6;
+
+            BlockchainService.Difficulty = difficulty;
             return RedirectToAction("Index");
         }
     }

@@ -11,22 +11,23 @@ namespace Blockchain_Example1.Services
         private readonly BlockchainContext _context;
         // For RSA
         private readonly RSAParameters _privateKey;
-        private readonly RSAParameters _publicKey;
         private readonly string _publicKeyXml;
+
+        // [27.10.25] Mining block
+        public static int Difficulty { get; set; } = 3;
+
 
         public BlockchainService(BlockchainContext context) {
             var rsa = RSA.Create();
             _privateKey = rsa.ExportParameters(true);
-            _publicKey = rsa.ExportParameters(false);
             _publicKeyXml = rsa.ToXmlString(false);
-
-            var block = new Block("Genesis block", "0") { Index = 0 };
-            block.Sign(_privateKey, _publicKeyXml);
-
+                        
             _context = context;
             // creating genesis block when initializing the service
             if (!_context.Blocks.Any())
             {
+                var block = new Block("Genesis block", "0") { Index = 0 };
+                block.Sign(_privateKey, _publicKeyXml);
                 _context.Blocks.Add(block);
                 _context.SaveChanges();
             }
@@ -36,15 +37,20 @@ namespace Blockchain_Example1.Services
 
         public int GetNextIndex() => _context.Blocks.Any() ? _context.Blocks.Max(b => b.Index) + 1 : 1;
 
-        public void AddBlock(string data)
+        public long AddBlock(string data)
         {
             // getting last block in the list
             var previousBlock = _context.Blocks.OrderByDescending(b => b.Index).First();
             // creating new block using the info from previous block
             var newBlock = new Block(data, previousBlock.Hash);
+
+            // [27.10.25] Mining before signing the block
+            newBlock.Mine(Difficulty);
+
             newBlock.Sign(_privateKey, _publicKeyXml);
             _context.Blocks.Add(newBlock);
             _context.SaveChanges();
+            return newBlock.MiningDurationMs;
         }
 
         public bool IsBlockValid(Block currentBlock, Block previousBlock)
@@ -52,6 +58,8 @@ namespace Blockchain_Example1.Services
             if (currentBlock.PreviousHash != previousBlock.Hash) return false;
             if (currentBlock.Hash != currentBlock.ComputeHash()) return false;
             if (!currentBlock.Verify()) return false;
+            // [27.10.25] 
+            if (!currentBlock.HashValidProof()) return false;
             return true;
         }
 
