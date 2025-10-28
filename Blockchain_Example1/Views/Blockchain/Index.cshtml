@@ -6,6 +6,24 @@
     string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
 }
 
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">RSA Private Key</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-key overflow-auto" style="overflow-wrap: anywhere">
+                @ViewBag.PrivateKey
+            </div>
+            <div class="modal-footer">
+                <button id="copyKeyButton" type="button" class="btn btn-primary">Copy Key</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="spinner-container"
      class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50
             d-flex flex-column justify-content-center align-items-center"
@@ -40,7 +58,13 @@
                 <input type="text" name="data" id="data" placeholder="Enter block data" class="form-control"/>
             </div>
             <div class="col-auto">
+                <input type="text" name="signature" id="signature" placeholder="Enter private key" class="form-control" />
+            </div>
+            <div class="col-auto">
                 <button type="submit" class="btn btn-primary">Add block</button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    Show Private Key
+                </button>
             </div>
         </form>
     </div>
@@ -83,6 +107,7 @@
                 @Html.DisplayNameFor(model => model.Timestamp)
             </th>
             <th>@Html.DisplayNameFor(model => model.Signature)</th>
+            <th>Signature validation</th>
         </tr>
     </thead>
     <tbody>
@@ -113,6 +138,16 @@
                 @shortenString(item.Signature)
             </td>
             <td>
+                    @if (ViewBag.SignatureValidity[item.Index] == true)
+                    {
+                        <span class="badge text-bg-success">Valid</span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-danger">Invalid</span>
+                    }
+            </td>
+            <td>
                 @Html.ActionLink("Edit", "Edit", new { id = item.Index }, new { @class = "btn btn-warning" })
                 @* @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-secondary" })
                 @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-danger" }) *@
@@ -133,6 +168,30 @@
                     spinner.classList.remove("d-none");
                 });
             }
+
+            const copyButton = document.getElementById("copyKeyButton");
+            copyButton.addEventListener("click", () => {
+                const keyText = document.querySelector(".modal-key").innerText.trim();
+
+                navigator.clipboard.writeText(keyText).then(() => {
+                    copyButton.textContent = "Copied!";
+                    copyButton.classList.remove("btn-primary");
+                    copyButton.classList.add("btn-success");
+
+                    setTimeout(() => {
+                        copyButton.textContent = "Copy Key";
+                        copyButton.classList.remove("btn-success");
+                        copyButton.classList.add("btn-primary");
+                    }, 1500);
+                }).catch(err => {
+                    console.error("Clipboard copy failed:", err);
+                    alert("Failed to copy key!");
+                });
+            });
+
         });
+
+
     </script>
 }
+

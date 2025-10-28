@@ -20,14 +20,21 @@ namespace Blockchain_Example1.Controllers
         {
             var chain = _blockchainService.GetChain();
             var validBlocks = new Dictionary<int, bool>();
+            var signatureValidity = new Dictionary<int, bool>();
 
             bool chainStillValid = true;
 
             if (chain.Count > 0)
+            {
                 validBlocks[chain[0].Index] = true;
+                signatureValidity[chain[0].Index] = chain[0].Verify();
+            }
 
             for (int i = 1; i < chain.Count; i++)
             {
+                // validate block
+                signatureValidity[chain[i].Index] = chain[i].Verify();
+
                 // if chain is not valid then mark other blocks as invalid
                 if (!chainStillValid)
                 {
@@ -43,16 +50,19 @@ namespace Blockchain_Example1.Controllers
             }
 
             ViewBag.ValidBlocks = validBlocks;
+            ViewBag.SignatureValidity = signatureValidity;
             ViewBag.IsValid = chainStillValid;
             ViewBag.Difficulty = BlockchainService.Difficulty;
+            ViewBag.PrivateKey = _blockchainService.PrivateKey;
+
             return View(chain);
         }
 
 
         [HttpPost]
-        public IActionResult Add(string data)
+        public IActionResult Add(string data, string signature)
         {
-            var ms = _blockchainService.AddBlock(data);
+            var ms = _blockchainService.AddBlock(data, signature);
             return RedirectToAction("Index");
         }
 
@@ -74,7 +84,7 @@ namespace Blockchain_Example1.Controllers
         public IActionResult SetDifficulty(int difficulty)
         {
             if (difficulty < 1) difficulty = 1;
-            if (difficulty > 6) difficulty = 6;
+            if (difficulty > 10) difficulty = 10;
 
             BlockchainService.Difficulty = difficulty;
             return RedirectToAction("Index");

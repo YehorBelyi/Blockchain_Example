@@ -10,8 +10,7 @@ namespace Blockchain_Example1.Services
     {
         private readonly BlockchainContext _context;
         // For RSA
-        private readonly RSAParameters _privateKey;
-        private readonly string _publicKeyXml;
+        public string PrivateKey { get; }
 
         // [27.10.25] Mining block
         public static int Difficulty { get; set; } = 3;
@@ -19,15 +18,16 @@ namespace Blockchain_Example1.Services
 
         public BlockchainService(BlockchainContext context) {
             var rsa = RSA.Create();
-            _privateKey = rsa.ExportParameters(true);
-            _publicKeyXml = rsa.ToXmlString(false);
+            PrivateKey = rsa.ToXmlString(true);
+            var privateKey = rsa.ExportParameters(true);
+            var publicKeyXml = rsa.ToXmlString(false); 
                         
             _context = context;
             // creating genesis block when initializing the service
             if (!_context.Blocks.Any())
             {
                 var block = new Block("Genesis block", "0") { Index = 0 };
-                block.Sign(_privateKey, _publicKeyXml);
+                block.Sign(privateKey, publicKeyXml);
                 _context.Blocks.Add(block);
                 _context.SaveChanges();
             }
@@ -37,7 +37,7 @@ namespace Blockchain_Example1.Services
 
         public int GetNextIndex() => _context.Blocks.Any() ? _context.Blocks.Max(b => b.Index) + 1 : 1;
 
-        public long AddBlock(string data)
+        public long AddBlock(string data, string signature)
         {
             // getting last block in the list
             var previousBlock = _context.Blocks.OrderByDescending(b => b.Index).First();
@@ -47,7 +47,15 @@ namespace Blockchain_Example1.Services
             // [27.10.25] Mining before signing the block
             newBlock.Mine(Difficulty);
 
-            newBlock.Sign(_privateKey, _publicKeyXml);
+            using (var rsa = RSA.Create())
+            {
+                rsa.FromXmlString(signature);
+                RSAParameters importedPrivateKey = rsa.ExportParameters(true);
+                // here, public key appears based on given imported private key
+                string importedPublicKeyXml = rsa.ToXmlString(false);
+                newBlock.Sign(importedPrivateKey, importedPublicKeyXml);
+            }
+                
             _context.Blocks.Add(newBlock);
             _context.SaveChanges();
             return newBlock.MiningDurationMs;
