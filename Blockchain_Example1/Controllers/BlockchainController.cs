@@ -19,39 +19,11 @@ namespace Blockchain_Example1.Controllers
         public IActionResult Index()
         {
             var chain = _blockchainService.GetChain();
-            var validBlocks = new Dictionary<int, bool>();
-            var signatureValidity = new Dictionary<int, bool>();
+            var validation = ValidateChain(chain);
 
-            bool chainStillValid = true;
-
-            if (chain.Count > 0)
-            {
-                validBlocks[chain[0].Index] = true;
-                signatureValidity[chain[0].Index] = chain[0].Verify();
-            }
-
-            for (int i = 1; i < chain.Count; i++)
-            {
-                // validate block
-                signatureValidity[chain[i].Index] = chain[i].Verify();
-
-                // if chain is not valid then mark other blocks as invalid
-                if (!chainStillValid)
-                {
-                    validBlocks[chain[i].Index] = false;
-                    continue;
-                }
-
-                bool isValid = _blockchainService.IsBlockValid(chain[i], chain[i - 1]);
-                validBlocks[chain[i].Index] = isValid;
-
-                if (!isValid)
-                    chainStillValid = false;
-            }
-
-            ViewBag.ValidBlocks = validBlocks;
-            ViewBag.SignatureValidity = signatureValidity;
-            ViewBag.IsValid = chainStillValid;
+            ViewBag.ValidBlocks = validation.ValidBlocks;
+            ViewBag.SignatureValidity = validation.SignatureValidity;
+            ViewBag.IsValid = validation.IsChainValid;
             ViewBag.Difficulty = BlockchainService.Difficulty;
             ViewBag.PrivateKey = _blockchainService.PrivateKey;
 
@@ -89,5 +61,65 @@ namespace Blockchain_Example1.Controllers
             BlockchainService.Difficulty = difficulty;
             return RedirectToAction("Index");
         }
+
+        [HttpGet]
+        public IActionResult Search(string query)
+        {
+            var chain = _blockchainService.GetChain();
+            var validation = ValidateChain(chain);
+
+            ViewBag.ValidBlocks = validation.ValidBlocks;
+            ViewBag.SignatureValidity = validation.SignatureValidity;
+            ViewBag.CurrentFilter = query;
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                if (int.TryParse(query, out int idx))
+                {
+                    chain = chain.Where(b => b.Index == idx).ToList();
+                }
+                else
+                {
+                    chain = chain.Where(b => b.Hash.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+            }
+
+            return PartialView("_BlockList", chain);
+        }
+
+        private ChainValidationResult ValidateChain(List<Block> chain)
+        {
+            var result = new ChainValidationResult();
+            bool chainStillValid = true;
+
+            if (chain.Count > 0)
+            {
+                result.ValidBlocks[chain[0].Index] = true;
+                result.SignatureValidity[chain[0].Index] = chain[0].Verify();
+            }
+
+            for (int i = 1; i < chain.Count; i++)
+            {
+                // validate block
+                result.SignatureValidity[chain[i].Index] = chain[i].Verify();
+
+                // if chain is not valid then mark other blocks as invalid
+                if (!chainStillValid)
+                {
+                    result.ValidBlocks[chain[i].Index] = false;
+                    continue;
+                }
+
+                bool isValid = _blockchainService.IsBlockValid(chain[i], chain[i - 1]);
+                result.ValidBlocks[chain[i].Index] = isValid;
+
+                if (!isValid)
+                    chainStillValid = false;
+            }
+
+            result.IsChainValid = chainStillValid;
+            return result;
+        }
+
     }
 }

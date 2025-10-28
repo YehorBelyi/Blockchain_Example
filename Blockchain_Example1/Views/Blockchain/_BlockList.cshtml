@@ -1,0 +1,88 @@
+﻿@model IEnumerable<Blockchain_Example1.Models.Block>;
+
+@{
+    string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-warning text-center">No blocks found.</div>
+}
+else
+{
+    <table class="table" id="Tabledata">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.Nonce)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.MiningDurationMs)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Index)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Data)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.PreviousHash)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Hash)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Timestamp)
+                </th>
+                <th>@Html.DisplayNameFor(model => model.Signature)</th>
+                <th>Signature validation</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr class="@(ViewBag.ValidBlocks[item.Index] == true ? "table-success" : "table-danger")">
+                    <td>
+                        <span class="badge text-bg-primary">@Html.DisplayFor(modelItem => item.Nonce) atts</span>
+                    </td>
+                    <td>
+                        <span class="badge text-bg-secondary">@Html.DisplayFor(modelItem => item.MiningDurationMs) ms</span>
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Index)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Data)
+                    </td>
+                    <td>
+                        @shortenString(item.PreviousHash)
+                    </td>
+                    <td>
+                        @shortenString(item.Hash)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Timestamp)
+                    </td>
+                    <td>
+                        @shortenString(item.Signature)
+                    </td>
+                    <td>
+                        @if (ViewBag.SignatureValidity[item.Index] == true)
+                        {
+                            <span class="badge text-bg-success">Valid</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-danger">Invalid</span>
+                        }
+                    </td>
+                    <td>
+                        @Html.ActionLink("Edit", "Edit", new { id = item.Index }, new { @class = "btn btn-warning" })
+                        @* @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-secondary" })
+                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-danger" }) *@
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

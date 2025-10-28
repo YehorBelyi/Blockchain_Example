@@ -28,7 +28,7 @@ namespace Blockchain_Example1.Models
         public Block(string data, string previousHash) {
             Data = data;
             PreviousHash = previousHash;
-            Timestamp = DateTime.UtcNow.ToString("O");
+            Timestamp = DateTime.UtcNow.ToString("f");
             Hash = ComputeHash();
         }
         // Method that creates hash based on data inside the block
