@@ -10,5 +10,7 @@ namespace Blockchain_Example1.Models
         }
 
         public virtual DbSet<Block> Blocks { get; set; }
+        public virtual DbSet<Wallet> Wallets { get; set; }
+        public virtual DbSet<Transaction> Transactions { get; set; }
     }
 }

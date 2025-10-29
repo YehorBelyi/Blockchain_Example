@@ -13,6 +13,7 @@ else
     <table class="table" id="Tabledata">
         <thead>
             <tr>
+                <th>Mining status</th>
                 <th>
                     @Html.DisplayNameFor(model => model.Nonce)
                 </th>
@@ -42,6 +43,16 @@ else
             @foreach (var item in Model)
             {
                 <tr class="@(ViewBag.ValidBlocks[item.Index] == true ? "table-success" : "table-danger")">
+                    <td>
+                        @if (item.IsMined)
+                        {
+                            <span class="badge bg-success">Mined</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Mining...</span>
+                        }
+                    </td>
                     <td>
                         <span class="badge text-bg-primary">@Html.DisplayFor(modelItem => item.Nonce) atts</span>
                     </td>

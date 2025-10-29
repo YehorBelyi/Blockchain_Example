@@ -12,17 +12,23 @@ namespace Blockchain_Example1.Models
     {
         [Key]
         public int Index { get; set; }
-        public string Data { get; set; } // information that block contains
-        public string PreviousHash { get; set; } // genesis - first block which starts the chain
-        public string Hash { get; set; }
-        public string Timestamp { get; set; }
-        public string? Signature {  get; private set; } // digital signature, private key
+        // this field is not needed anymore, since we have List<Transaction> Transactions
+        public string Data { get; set; } = string.Empty; // information that block contains
+
+        public List<Transaction> Transactions { get; } = new();
+        public int TransactionsCount => Transactions.Count;
+        public string PreviousHash { get; set; } = string.Empty; // genesis - first block which starts the chain
+        public string Hash { get; set; } = string.Empty;
+        public string Timestamp { get; set; } = string.Empty;
+        public string? Signature { get; private set; } = string.Empty;// digital signature, private key
         public string? PublicKeyXml { get; private set; } = string.Empty;
 
         // Mining block, Proof of Work (POW)
         public int Nonce { get; set; } // amount of attempts to guess the hash
         public int Difficulty { get; private set; } // amount of zeros (0), algorithm difficulty
         public long MiningDurationMs { get; set; } // time taken to guess
+
+        public bool IsMined { get; set; } = false;
 
 
         public Block(string data, string previousHash) {
@@ -31,6 +37,13 @@ namespace Blockchain_Example1.Models
             Timestamp = DateTime.UtcNow.ToString("f");
             Hash = ComputeHash();
         }
+
+        public void SetTransaction(List<Transaction> transactions)
+        {
+            transactions.Clear();
+            transactions.AddRange(Transactions);
+        }
+
         // Method that creates hash based on data inside the block
         public string ComputeHash()
         {
@@ -80,12 +93,13 @@ namespace Blockchain_Example1.Models
         }
 
         public void SetSignature(string signature) => Signature = signature;
-    
+
+        // Synchronious mining
         public void Mine(int difficulty)
         {
             Difficulty = difficulty;
             // Creating string that contains this amount of zeros, BUT THAT STILL IS NOT HASH!
-            string target = new string('0', Difficulty); 
+            string target = new string('0', Difficulty);
 
             // Starting timer
             var sw = Stopwatch.StartNew();
@@ -99,6 +113,30 @@ namespace Blockchain_Example1.Models
             sw.Stop();
             // Get time taken to guess
             MiningDurationMs = sw.ElapsedMilliseconds;
+        }
+
+        // Asynchronius mining
+        public async Task MineAsync(int difficulty)
+        {
+            await Task.Run(() =>
+            {
+                Difficulty = difficulty;
+                // Creating string that contains this amount of zeros, BUT THAT STILL IS NOT HASH!
+                string target = new string('0', Difficulty);
+
+                // Starting timer
+                var sw = Stopwatch.StartNew();
+                // Trying to guess the hash untill we guess the right one
+                do
+                {
+                    Nonce++;
+                    Hash = ComputeHash();
+                } while (!Hash.StartsWith(target, StringComparison.Ordinal));
+                // Stopping timer
+                sw.Stop();
+                // Get time taken to guess
+                MiningDurationMs = sw.ElapsedMilliseconds;
+            });
         }
 
         // [Mining]: Check if guessed hash is valid

@@ -32,9 +32,15 @@ namespace Blockchain_Example1.Controllers
 
 
         [HttpPost]
-        public IActionResult Add(string data, string signature)
+        public async Task<IActionResult> Add(string data, string signature)
         {
-            var ms = _blockchainService.AddBlock(data, signature);
+            if (string.IsNullOrWhiteSpace(data))
+            {
+                TempData["Error"] = "Block data cannot be empty.";
+                return RedirectToAction("Index");
+            }
+            //var ms = _blockchainService.AddBlock(data, signature);
+            await _blockchainService.AddBlockAsync(data, signature);
             return RedirectToAction("Index");
         }
 

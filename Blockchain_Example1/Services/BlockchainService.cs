@@ -14,7 +14,7 @@ namespace Blockchain_Example1.Services
 
         // [27.10.25] Mining block
         public static int Difficulty { get; set; } = 3;
-
+        private static readonly SemaphoreSlim _chainLock = new(1, 1);
 
         public BlockchainService(BlockchainContext context) {
             var rsa = RSA.Create();
@@ -26,7 +26,8 @@ namespace Blockchain_Example1.Services
             // creating genesis block when initializing the service
             if (!_context.Blocks.Any())
             {
-                var block = new Block("Genesis block", "0") { Index = 0 };
+                var block = new Block("Genesis block", "0") { Index = 0, IsMined = true };
+
                 block.Sign(privateKey, publicKeyXml);
                 _context.Blocks.Add(block);
                 _context.SaveChanges();
@@ -59,6 +60,42 @@ namespace Blockchain_Example1.Services
             _context.Blocks.Add(newBlock);
             _context.SaveChanges();
             return newBlock.MiningDurationMs;
+        }
+
+        public async Task AddBlockAsync(string data, string signature)
+        {
+            await _chainLock.WaitAsync();
+
+            try
+            {
+                var previousBlock = await _context.Blocks.OrderByDescending(b => b.Index).FirstAsync();
+                var newBlock = new Block(data, previousBlock.Hash) { MiningDurationMs = 0, IsMined = false }; // When is not mined
+
+                _context.Blocks.Add(newBlock);
+                await _context.SaveChangesAsync();
+
+                // Start mining in background
+                await Task.Run(async () =>
+                {
+                    await newBlock.MineAsync(Difficulty);
+
+                    using (var rsa = RSA.Create())
+                    {
+                        rsa.FromXmlString(signature);
+                        RSAParameters importedPrivateKey = rsa.ExportParameters(true);
+                        string importedPublicKeyXml = rsa.ToXmlString(false);
+                        newBlock.Sign(importedPrivateKey, importedPublicKeyXml);
+                    }
+
+                    newBlock.IsMined = true;
+
+                    _context.Blocks.Update(newBlock);
+                    await _context.SaveChangesAsync();
+                });
+            } finally
+            {
+                _chainLock.Release();
+            }
         }
 
         public bool IsBlockValid(Block currentBlock, Block previousBlock)
