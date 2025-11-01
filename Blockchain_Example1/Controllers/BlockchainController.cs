@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Blockchain_Example1.Models;
 using Blockchain_Example1.Services;
+using Blockchain_Example1.Services.Repository;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Blockchain_Example1.Controllers
@@ -8,17 +9,23 @@ namespace Blockchain_Example1.Controllers
     public class BlockchainController : Controller
     {
         private readonly ILogger<BlockchainController> _logger;
-        private BlockchainService _blockchainService;
+        private readonly BlockchainService _blockchainService;
+        private readonly IRepository<Block> _blockRepository;
+        private readonly IRepository<Wallet> _walletRepository;
+        private readonly IRepository<Transaction> _transactiopnRepository;
 
-        public BlockchainController(ILogger<BlockchainController> logger, BlockchainService blockchainService)
+        public BlockchainController(ILogger<BlockchainController> logger, BlockchainService blockchainService, IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository)
         {
             _logger = logger;
             _blockchainService = blockchainService;
+            _blockRepository = blockRepository;
+            _walletRepository = walletRepository;
+            _transactiopnRepository = transactionRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var chain = _blockchainService.GetChain();
+            var chain = await _blockRepository.GetChain();
             var validation = ValidateChain(chain);
 
             ViewBag.ValidBlocks = validation.ValidBlocks;
@@ -26,34 +33,23 @@ namespace Blockchain_Example1.Controllers
             ViewBag.IsValid = validation.IsChainValid;
             ViewBag.Difficulty = BlockchainService.Difficulty;
             ViewBag.PrivateKey = _blockchainService.PrivateKey;
+            ViewBag.PublicKey = _blockchainService.PublicKeyXml;
+            ViewBag.Mempool = await _transactiopnRepository.GetMempoolAsync();
+            ViewBag.Wallets = await _walletRepository.GetListDataAsync();
 
             return View(chain);
         }
 
-
-        [HttpPost]
-        public async Task<IActionResult> Add(string data, string signature)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (string.IsNullOrWhiteSpace(data))
-            {
-                TempData["Error"] = "Block data cannot be empty.";
-                return RedirectToAction("Index");
-            }
-            //var ms = _blockchainService.AddBlock(data, signature);
-            await _blockchainService.AddBlockAsync(data, signature);
-            return RedirectToAction("Index");
-        }
-
-        public async Task<IActionResult> Edit(int? id)
-        {
-            Block block = _blockchainService.GetBlock(id);
+            Block block = await _blockchainService.GetBlock(id);
             return View(block);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(int? id, string? data, string? signature)
+        public async Task<IActionResult> Edit(int id, string data, string signature)
         {
-            _blockchainService.EditBlock(id, data, signature);
+            await _blockchainService.EditBlock(id, data, signature);
             return RedirectToAction("Index");
         }
 
@@ -69,9 +65,9 @@ namespace Blockchain_Example1.Controllers
         }
 
         [HttpGet]
-        public IActionResult Search(string query)
+        public async Task<IActionResult> Search(string query)
         {
-            var chain = _blockchainService.GetChain();
+            var chain = await _blockRepository.GetChain();
             var validation = ValidateChain(chain);
 
             ViewBag.ValidBlocks = validation.ValidBlocks;
@@ -127,5 +123,78 @@ namespace Blockchain_Example1.Controllers
             return result;
         }
 
+        [HttpPost]
+        public IActionResult RegisterWallet(string publicKeyXml, string displayName)
+        {
+            var wallet = _blockchainService.RegisterWallet(publicKeyXml, displayName);
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DemoSetup()
+        {
+            var (Ivan, privateKey1) = await _blockchainService.DemoCreateWallet("Ivan");
+            var (Taras, privateKey2) = await _blockchainService.DemoCreateWallet("Taras");
+
+            decimal amount = 10.0m;
+            decimal fee = 0.5m;
+
+            var tx = new Transaction
+            {
+                FromAddress = Ivan.Address,
+                ToAddress = Taras.Address,
+                Amount = amount,
+                Fee = fee,
+                Note = "Test payment service"
+            };
+
+            var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
+
+            tx.Signature = sig;
+
+            _blockchainService.CreateTransaction(tx);
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateTransaction(string fromAddress, string toAddress, decimal amount, decimal fee, string privateKey, string note)
+        {
+            var tx = new Models.Transaction
+            {
+                FromAddress = fromAddress,
+                ToAddress = toAddress,
+                Amount = amount,
+                Fee = fee,
+                Note = note
+            };
+
+            tx.Signature = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey);
+            Console.WriteLine($"1: {tx.Signature}");
+            //try
+            //{
+                await _blockchainService.CreateTransaction(tx);
+            //}
+            //catch (Exception ex)
+            //{
+            //    TempData["Error"] = ex.Message;
+            //}
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MinePending(string privateKey)
+        {
+            try
+            {
+                await _blockchainService.MinePending(privateKey);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+            return RedirectToAction("Index");
+        }
     }
+
+
 }

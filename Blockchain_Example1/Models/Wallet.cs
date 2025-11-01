@@ -9,7 +9,7 @@ namespace Blockchain_Example1.Models
         [Key]
         public int Id { get; set; }
         public string Address { get; set; } = string.Empty;
-        public string PublicKey { get; set; } = string.Empty;
+        public string PublicKeyXml { get; set; } = string.Empty;
         public string DisplayName {  get; set; } = string.Empty;
         public DateTime JoinedOn { get; set; } = DateTime.UtcNow;
 

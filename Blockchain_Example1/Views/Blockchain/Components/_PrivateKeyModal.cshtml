@@ -1,0 +1,17 @@
+﻿<div class="modal fade" id="privateKeyModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">RSA Private Key</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body modal-key overflow-auto" style="overflow-wrap: anywhere">
+                @ViewBag.PrivateKey
+            </div>
+            <div class="modal-footer">
+                <button id="copyKeyButton" type="button" class="btn btn-primary">Copy Key</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 
 namespace Blockchain_Example1.Models
@@ -17,9 +18,14 @@ namespace Blockchain_Example1.Models
         public string Signature { get; set; } = string.Empty;
         public string? Note {  get; set; }
 
+        public int? BlockId { get; set; }
+
+        [ForeignKey(nameof(BlockId))]
+        public Block? Block { get; set; }
+
         public string CanonicalPayload()
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0}|{1}|{2:0.########}| {3:0.########}", 
+            return string.Format(CultureInfo.InvariantCulture, "{0}|{1}|{2:0.########}|{3:0.########}", 
                 FromAddress,ToAddress, Amount, Fee);
         }
     }

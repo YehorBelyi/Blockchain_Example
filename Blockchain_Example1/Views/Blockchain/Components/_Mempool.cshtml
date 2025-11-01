@@ -1,0 +1,39 @@
+﻿@{
+    var mempool = ViewBag.Mempool as List<Transaction>;
+    string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
+}
+
+<hr />
+
+<h1>Mempool</h1>
+
+@if (mempool.Count == 0)
+{
+    <div class="alert alert-warning text-center">No transactions found.</div>
+}
+else
+{
+    <table class="table" id="Tabledata">
+        <thead>
+            <tr>
+                <th>From Address</th>
+                <th>To Address</th>
+                <th>Amount</th>
+                <th>Fee</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in mempool)
+            {
+                <tr>
+                    <td>@item.FromAddress</td>
+                    <td>@item.ToAddress</td>
+                    <td>@item.Amount</td>
+                    <td>@item.Fee</td>
+                    <td>@item.Note</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

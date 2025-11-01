@@ -1,0 +1,21 @@
+﻿<div class="modal fade" id="registerWalletModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Register Wallet</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-action="RegisterWallet">
+                <div class="modal-body modal-key overflow-auto" style="overflow-wrap: anywhere">
+                    <input type="text" name="displayName" placeholder="Enter owner name" />
+                    <input type="text" name="publicKeyXml" placeholder="Enter public key XML" />
+                    <input type="submit" placeholder="Register wallet" />
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Register</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

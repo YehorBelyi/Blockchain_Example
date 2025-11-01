@@ -1,0 +1,45 @@
+﻿<div class="d-flex flex-row gap-3 my-3">
+    <div class="shadow rounded p-4">
+        <h4>Handle mining</h4>
+        <form method="post" asp-action="MinePending" class="row g-3 align-items-center" id="addBlockForm">
+            <div class="col-auto">
+                <input type="text" name="signature" id="signature" placeholder="Enter private key" class="form-control" />
+            </div>
+            <div class="col-auto d-flex gap-2 align-items-center">
+                <button type="submit" class="btn btn-primary">Start mining</button>
+
+
+                <div id="spinner-container" class="d-none ms-3">
+                    <div class="spinner-border text-primary" role="status" style="width: 1.8rem; height: 1.8rem;">
+                        <span class="visually-hidden">Mining...</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
+    <div class="shadow rounded p-4">
+        <h4>Change mining difficulty</h4>
+        <form method="post" asp-action="SetDifficulty" class="row">
+            <div class="col-auto">
+                <input type="number" name="difficulty" id="difficulty" placeholder="Enter difficulty" class="form-control" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Set</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="d-flex justify-content-center">
+        <div class="shadow rounded p-4">
+            <h4>Seach block (by index or hash)</h4>
+            <form asp-action="Search" method="get" class="row"
+                  data-ajax="true" data-ajax-update="#Tabledata" data-ajax-mode="replace">
+                <div class="col-auto text-center">
+                    <input type="text" name="query" id="query" placeholder="Enter index or hash" class="form-control" value=@ViewBag.CurrentFilter />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

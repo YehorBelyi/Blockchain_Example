@@ -2,6 +2,7 @@
 
 @{
     string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
+
 }
 
 @if (!Model.Any())
@@ -22,9 +23,6 @@ else
                 </th>
                 <th>
                     @Html.DisplayNameFor(model => model.Index)
-                </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.Data)
                 </th>
                 <th>
                     @Html.DisplayNameFor(model => model.PreviousHash)
@@ -61,9 +59,6 @@ else
                     </td>
                     <td>
                         @Html.DisplayFor(modelItem => item.Index)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.Data)
                     </td>
                     <td>
                         @shortenString(item.PreviousHash)

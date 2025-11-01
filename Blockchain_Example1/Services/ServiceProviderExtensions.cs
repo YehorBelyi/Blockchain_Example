@@ -1,4 +1,5 @@
 ﻿using Blockchain_Example1.Models;
+using Blockchain_Example1.Services.Repository;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blockchain_Example1.Services
@@ -9,6 +10,9 @@ namespace Blockchain_Example1.Services
         {
             services.AddDbContext<BlockchainContext>(options =>
                 options.UseSqlServer(connectionString));
+            services.AddTransient<IRepository<Block>, BlockRepository>();
+            services.AddTransient<IRepository<Wallet>, WalletRepository>();
+            services.AddTransient<IRepository<Transaction>, TransactionRepository>();
             services.AddScoped<BlockchainService>();
         }
     }

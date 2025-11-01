@@ -1,0 +1,37 @@
+﻿@{
+    var wallets = ViewBag.Wallets as List<Wallet>;
+    string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
+}
+
+<hr />
+
+<h1>Wallet List</h1>
+
+@if (wallets.Count == 0)
+{
+    <div class="alert alert-warning text-center">No wallets found.</div>
+}
+else
+{
+    <table class="table" id="Tabledata">
+        <thead>
+            <tr>
+                <th>Address</th>
+                <th>Name</th>
+                <th>Public Key</th>
+                <th>Joined On</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var wallet in wallets)
+            {
+                <tr>
+                    <td>@wallet.Address</td>
+                    <td>@wallet.DisplayName</td>
+                    <td>@shortenString(wallet.PublicKeyXml)</td>
+                    <td>@wallet.JoinedOn.ToString("u")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

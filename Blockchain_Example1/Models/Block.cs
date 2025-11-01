@@ -13,9 +13,9 @@ namespace Blockchain_Example1.Models
         [Key]
         public int Index { get; set; }
         // this field is not needed anymore, since we have List<Transaction> Transactions
-        public string Data { get; set; } = string.Empty; // information that block contains
+        //public string Data { get; set; } = string.Empty; // information that block contains
 
-        public List<Transaction> Transactions { get; } = new();
+        public List<Transaction> Transactions { get; set;  } = new();
         public int TransactionsCount => Transactions.Count;
         public string PreviousHash { get; set; } = string.Empty; // genesis - first block which starts the chain
         public string Hash { get; set; } = string.Empty;
@@ -31,8 +31,7 @@ namespace Blockchain_Example1.Models
         public bool IsMined { get; set; } = false;
 
 
-        public Block(string data, string previousHash) {
-            Data = data;
+        public Block(string previousHash) {
             PreviousHash = previousHash;
             Timestamp = DateTime.UtcNow.ToString("f");
             Hash = ComputeHash();
@@ -44,11 +43,24 @@ namespace Blockchain_Example1.Models
             transactions.AddRange(Transactions);
         }
 
+        // Return info about all transactions in the list of specific block
+        private string CanonicalizeTransactions()
+        {
+            var sb = new StringBuilder();
+            foreach (var tx in Transactions)
+            {
+                sb.Append(tx.CanonicalPayload());
+                sb.Append("|");
+            }
+            return sb.ToString();
+        }
+
         // Method that creates hash based on data inside the block
         public string ComputeHash()
         {
             // [27.10.2025] Added to hash these parameters: Nonce and difficulty
-            var raw = Data + PreviousHash + Timestamp + Nonce + Difficulty; // constructing info about specific block
+            // [31.10.2025] Added to hash Transactions list instead of data
+            var raw = PreviousHash + Timestamp + Nonce + Difficulty + CanonicalizeTransactions(); // constructing info about specific block
             using (var sha = SHA256.Create())
             {
                 byte[] bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(raw));
@@ -57,11 +69,25 @@ namespace Blockchain_Example1.Models
         }
 
 
+        //// RSA: function to sign block with RSA algorithm
+        //public void Sign(RSAParameters privateKey, string publicKey)
+        //{
+        //    var rsa = RSA.Create();
+        //    rsa.ImportParameters(privateKey);
+        //    byte[] data = Encoding.UTF8.GetBytes(Hash);
+        //    // Pkcs1 - a template to create private key based on block hash
+        //    // using hash to generate private key
+        //    byte[] sig = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        //    // Generating signature
+        //    Signature = Convert.ToBase64String(sig);
+        //    PublicKeyXml = publicKey;
+        //}
+
         // RSA: function to sign block with RSA algorithm
-        public void Sign(RSAParameters privateKey, string publicKey)
+        public void Sign(string privateKeyXml, string publicKey)
         {
             var rsa = RSA.Create();
-            rsa.ImportParameters(privateKey);
+            rsa.FromXmlString(privateKeyXml);
             byte[] data = Encoding.UTF8.GetBytes(Hash);
             // Pkcs1 - a template to create private key based on block hash
             // using hash to generate private key
