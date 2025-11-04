@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Blockchain_Example1.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -8,7 +9,9 @@ namespace Blockchain_Example1.Models
     {
         [Key]
         public int Id { get; set; }
+        [MaxLength((int)Restrictions.MaxAddressChars)]
         public string Address { get; set; } = string.Empty;
+        [MaxLength((int)Restrictions.MaxKeyChars)]
         public string PublicKeyXml { get; set; } = string.Empty;
         public string DisplayName {  get; set; } = string.Empty;
         public DateTime JoinedOn { get; set; } = DateTime.UtcNow;

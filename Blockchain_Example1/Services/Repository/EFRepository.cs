@@ -87,10 +87,13 @@ namespace Blockchain_Example1.Services.Repository
             return await _context.Blocks.OrderBy(b => b.Index).ToListAsync();
         }
 
-        public async Task<Block> GetLastBlock()
+        public async Task<Block?> GetLastBlock()
         {
-            return await _context.Blocks.LastOrDefaultAsync();
+            return await _context.Blocks
+                .OrderByDescending(b => b.Index)
+                .FirstOrDefaultAsync();
         }
+
 
         // Methods for [Wallet] entity
         public async Task<Wallet> GetWalletByAddress(string fromAddress)

@@ -8,6 +8,7 @@ namespace Blockchain_Example1.Services
     {
         public static void AddBlockchainSerivce(this IServiceCollection services, string connectionString)
         {
+            services.AddSingleton<RSAService>();
             services.AddDbContext<BlockchainContext>(options =>
                 options.UseSqlServer(connectionString));
             services.AddTransient<IRepository<Block>, BlockRepository>();

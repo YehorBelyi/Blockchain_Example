@@ -36,6 +36,7 @@ namespace Blockchain_Example1.Controllers
             ViewBag.PublicKey = _blockchainService.PublicKeyXml;
             ViewBag.Mempool = await _transactiopnRepository.GetMempoolAsync();
             ViewBag.Wallets = await _walletRepository.GetListDataAsync();
+            //ViewBag.Balances = _blockchainService.GetBalances(true);
 
             return View(chain);
         }
@@ -152,7 +153,7 @@ namespace Blockchain_Example1.Controllers
 
             tx.Signature = sig;
 
-            _blockchainService.CreateTransaction(tx);
+            await _blockchainService.CreateTransaction(tx);
             return RedirectToAction("Index");
         }
 
@@ -184,14 +185,14 @@ namespace Blockchain_Example1.Controllers
         [HttpPost]
         public async Task<IActionResult> MinePending(string privateKey)
         {
-            try
-            {
+            //try
+            //{
                 await _blockchainService.MinePending(privateKey);
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = ex.Message;
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    TempData["Error"] = ex.Message;
+            //}
             return RedirectToAction("Index");
         }
     }

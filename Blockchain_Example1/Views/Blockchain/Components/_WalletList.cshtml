@@ -18,6 +18,7 @@ else
             <tr>
                 <th>Address</th>
                 <th>Name</th>
+                @* <th>Balance</th> *@
                 <th>Public Key</th>
                 <th>Joined On</th>
             </tr>
@@ -28,6 +29,7 @@ else
                 <tr>
                     <td>@wallet.Address</td>
                     <td>@wallet.DisplayName</td>
+                    @* <td>@ViewBag.Balances[wallet.Address]</td> *@
                     <td>@shortenString(wallet.PublicKeyXml)</td>
                     <td>@wallet.JoinedOn.ToString("u")</td>
                 </tr>
