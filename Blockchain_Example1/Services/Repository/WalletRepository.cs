@@ -4,10 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blockchain_Example1.Services
 {
-    public class TransactionRepository : EFRepository<Transaction>
+    public class WalletRepository : EFRepository<Wallet>
     {
         private readonly BlockchainContext _context;
-        public TransactionRepository(BlockchainContext context):base(context)
+        public WalletRepository(BlockchainContext context):base(context)
         {
             _context = context;
         }

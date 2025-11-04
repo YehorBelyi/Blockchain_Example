@@ -2,7 +2,9 @@ using System.Diagnostics;
 using Blockchain_Example1.Models;
 using Blockchain_Example1.Services;
 using Blockchain_Example1.Services.Repository;
+using Blockchain_Example1.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol;
 
 namespace Blockchain_Example1.Controllers
 {
@@ -36,7 +38,7 @@ namespace Blockchain_Example1.Controllers
             ViewBag.PublicKey = _blockchainService.PublicKeyXml;
             ViewBag.Mempool = await _transactiopnRepository.GetMempoolAsync();
             ViewBag.Wallets = await _walletRepository.GetListDataAsync();
-            //ViewBag.Balances = _blockchainService.GetBalances(true);
+            ViewBag.Balances = await _blockchainService.GetBalances(true);
 
             return View(chain);
         }
@@ -171,14 +173,14 @@ namespace Blockchain_Example1.Controllers
 
             tx.Signature = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey);
             Console.WriteLine($"1: {tx.Signature}");
-            //try
-            //{
+            try
+            {
                 await _blockchainService.CreateTransaction(tx);
-            //}
-            //catch (Exception ex)
-            //{
-            //    TempData["Error"] = ex.Message;
-            //}
+            }
+            catch (Exception ex)
+            {
+                TempData["TransactionError"] = ex.Message;
+            }
             return RedirectToAction("Index");
         }
 

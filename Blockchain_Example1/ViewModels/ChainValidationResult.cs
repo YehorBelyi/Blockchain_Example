@@ -1,4 +1,4 @@
-﻿namespace Blockchain_Example1.Models
+﻿namespace Blockchain_Example1.ViewModels
 {
     public class ChainValidationResult
     {

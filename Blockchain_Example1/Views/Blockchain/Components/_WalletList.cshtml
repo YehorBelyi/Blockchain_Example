@@ -1,9 +1,16 @@
 ﻿@{
     var wallets = ViewBag.Wallets as List<Wallet>;
+    var balances = ViewBag.Balances as Dictionary<string, decimal>;
     string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
+    string? transactionError = TempData["TransactionError"] as string;
 }
 
-<hr />
+@if (!string.IsNullOrEmpty(transactionError))
+{
+    <div class="alert alert-danger" role="alert">
+        @transactionError
+    </div>
+}
 
 <h1>Wallet List</h1>
 
@@ -18,7 +25,7 @@ else
             <tr>
                 <th>Address</th>
                 <th>Name</th>
-                @* <th>Balance</th> *@
+                <th>Balance</th>
                 <th>Public Key</th>
                 <th>Joined On</th>
             </tr>
@@ -29,7 +36,14 @@ else
                 <tr>
                     <td>@wallet.Address</td>
                     <td>@wallet.DisplayName</td>
-                    @* <td>@ViewBag.Balances[wallet.Address]</td> *@
+                    @if (balances.ContainsKey(wallet.Address)) {
+                        <td>@balances[wallet.Address]</td>
+                    }
+                    else
+                    {
+                        <td>0</td>
+                    }
+
                     <td>@shortenString(wallet.PublicKeyXml)</td>
                     <td>@wallet.JoinedOn.ToString("u")</td>
                 </tr>

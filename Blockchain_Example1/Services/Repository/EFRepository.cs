@@ -84,7 +84,10 @@ namespace Blockchain_Example1.Services.Repository
         // Methods for [Block] entity
         public async Task<List<Block>> GetChain()
         {
-            return await _context.Blocks.OrderBy(b => b.Index).ToListAsync();
+            return await _context.Blocks
+                .Include(b => b.Transactions)
+                .OrderBy(b => b.Index)
+                .ToListAsync();
         }
 
         public async Task<Block?> GetLastBlock()
@@ -99,6 +102,20 @@ namespace Blockchain_Example1.Services.Repository
         public async Task<Wallet> GetWalletByAddress(string fromAddress)
         {
             return await _context.Wallets.FirstOrDefaultAsync(w => w.Address == fromAddress);
+        }
+
+
+        public async Task<decimal> GetWalletBalanceAsync(string address)
+        {
+            var received = await _context.Transactions
+                .Where(t => t.ToAddress == address)
+                .SumAsync(t => (decimal?)t.Amount) ?? 0;
+
+            var sent = await _context.Transactions
+                .Where(t => t.FromAddress == address && t.FromAddress != "COINBASE")
+                .SumAsync(t => (decimal?)(t.Amount + t.Fee)) ?? 0;
+
+            return received - sent;
         }
 
         // Methods for [Mempool] entity
@@ -122,5 +139,6 @@ namespace Blockchain_Example1.Services.Repository
             _context.Transactions.RemoveRange(pending);
             await _context.SaveChangesAsync();
         }
+
     }
 }

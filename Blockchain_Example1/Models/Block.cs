@@ -39,8 +39,8 @@ namespace Blockchain_Example1.Models
 
         public void SetTransaction(List<Transaction> transactions)
         {
-            transactions.Clear();
-            transactions.AddRange(Transactions);
+            Transactions.Clear();
+            Transactions.AddRange(transactions);
         }
 
         // Return info about all transactions in the list of specific block

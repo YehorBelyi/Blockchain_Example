@@ -1,9 +1,10 @@
 ﻿using Blockchain_Example1.Models;
-using Blockchain_Example1.Services.Repository;
-using System.Security.Cryptography;
 using Blockchain_Example1.Services;
-using System.Text;
+using Blockchain_Example1.Services.Repository;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Blockchain_Example1.Services
 {
@@ -13,6 +14,7 @@ namespace Blockchain_Example1.Services
         private readonly IRepository<Block> _blockRepository;
         private readonly IRepository<Wallet> _walletRepository;
         private readonly IRepository<Transaction> _transactionRepository;
+        private readonly ILogger<BlockchainService> _logger;
         // For RSA
         public string privateKey;
         public string publicKey;
@@ -28,7 +30,8 @@ namespace Blockchain_Example1.Services
         //public List<Transaction> Mempool { get; set; } = new List<Transaction>();
         public const decimal MinerReward = 1.0m;
 
-        public BlockchainService(IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository, RSAService rsaService) {
+        public BlockchainService(IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository, RSAService rsaService, ILogger<BlockchainService> logger)
+        {
             _rsaService = rsaService;
             (privateKey, publicKey) = _rsaService.GetRSAKeys();
 
@@ -37,6 +40,7 @@ namespace Blockchain_Example1.Services
 
             _walletRepository = walletRepository;
             _transactionRepository = transactionRepository;
+            _logger = logger;
 
             //// [MOVED TO Repository.cs]
             //// creating genesis block when initializing the service
@@ -68,6 +72,14 @@ namespace Blockchain_Example1.Services
             var rsa = RSA.Create();
             //var wallet = Wallets[transaction.FromAddress];
             var wallet = await _walletRepository.GetWalletByAddress(transaction.FromAddress);
+
+            var currentWalletBalance = await _walletRepository.GetWalletBalanceAsync(wallet.Address);
+
+            if (currentWalletBalance < (transaction.Amount + transaction.Fee))
+            {
+                throw new Exception("Not enough coins on the balance!");
+            }
+
             rsa.FromXmlString(wallet.PublicKeyXml);
             var payload = Encoding.UTF8.GetBytes(transaction.CanonicalPayload());
             var sig = Convert.FromBase64String(transaction.Signature);
@@ -205,6 +217,7 @@ namespace Blockchain_Example1.Services
         {
             if (currentBlock.PreviousHash != previousBlock.Hash) return false;
             if (currentBlock.Hash != currentBlock.ComputeHash()) return false;
+            var tempHash = currentBlock.ComputeHash();
             if (!currentBlock.Verify()) return false;
             // [27.10.25] 
             if (!currentBlock.HashValidProof()) return false;
@@ -235,44 +248,57 @@ namespace Blockchain_Example1.Services
             return chainStillValid;
         }
 
-        //public Dictionary<string, decimal> GetBalances(bool includeToMempool = false)
-        //{
-        //    var balances = new Dictionary<string, decimal>();
-        //    foreach (var block in Chain)
-        //    {
-        //        foreach (var item in block.Transcations)
-        //        {
-        //            ApplyTranscationToBalances(balances, item);
-        //        }
-        //    }
+        // Proccess balances for all wallets
+        public async Task<Dictionary<string, decimal>> GetBalances(bool includeToMempool = false)
+        {
+            var balances = new Dictionary<string, decimal>();
+            foreach (var block in await _blockRepository.GetChain())
+            {
+                foreach (var item in block.Transactions)
+                {
+                    ApplyTranscationToBalances(balances, item);
+                }
+            }
 
-        //    if (includeToMempool)
-        //    {
-        //        foreach (var tran in Mempool)
-        //        {
-        //            ApplyTranscationToBalances(balances, tran);
-        //        }
-        //    }
-        //    return balances;
-        //}
+            if (includeToMempool)
+            {
+                foreach (var tran in await _transactionRepository.GetMempoolAsync())
+                {
+                    ApplyTranscationToBalances(balances, tran);
+                }
+            }
+            foreach (var (key, value) in balances) {
+                _logger.LogInformation($"{key}: {value}");
+            }
+            return balances;
+        }
 
-        //// Proccess wallets balances
+        // Proccess wallets balances
         private static void ApplyTranscationToBalances(Dictionary<string, decimal> balances, Transaction tx)
         {
-            if (!balances.TryGetValue(tx.ToAddress, out var toBalance))
-            {
-                toBalance = 0;
-            }
-            balances[tx.ToAddress] = toBalance + tx.Amount;
-
-            if (tx.FromAddress.Equals("COINBASE"))
+            if (!tx.FromAddress.Equals("COINBASE", StringComparison.OrdinalIgnoreCase))
             {
                 if (!balances.TryGetValue(tx.FromAddress, out var fromBalance))
                 {
                     fromBalance = 0;
                 }
-                balances[tx.FromAddress] = fromBalance - (tx.Amount - tx.Fee);
+
+                balances[tx.FromAddress] = fromBalance - (tx.Amount + tx.Fee);
             }
+
+            // Додаємо отримувачу
+            if (!balances.TryGetValue(tx.ToAddress, out var toBalance))
+            {
+                toBalance = 0;
+            }
+            balances[tx.ToAddress] = toBalance + tx.Amount;
+        }
+
+
+
+        public async Task<decimal> GetWalletsBalancesAsync(string address)
+        {
+            return await _walletRepository.GetWalletBalanceAsync(address);
         }
 
         public async Task<Block> GetBlock(int id)

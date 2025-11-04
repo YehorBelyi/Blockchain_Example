@@ -29,5 +29,7 @@ namespace Blockchain_Example1.Services.Repository
         Task AddToMempoolAsync(Transaction transaction);
 
         Task ClearMempoolAsync();
+
+        Task<decimal> GetWalletBalanceAsync(string address);
     }
 }
