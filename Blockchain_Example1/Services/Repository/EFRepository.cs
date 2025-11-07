@@ -6,18 +6,18 @@ namespace Blockchain_Example1.Services.Repository
     public class EFRepository<T> : IRepository<T> where T : class
     {
         private readonly BlockchainContext _context;
-        public EFRepository(BlockchainContext context)
+        public EFRepository(IDbContextFactory<BlockchainContext> factory)
         {
-            _context = context;
+            _context = factory.CreateDbContext();
         }
         // creating genesis block when initializing the service
         public void CreateGenesisBlock(string privateKey, string publicKey)
         {
             if (!_context.Blocks.Any())
             {
-                var block = new Block("0") { Index = 0, IsMined = true };
+                var block = new Block("0", new DateTime(2025, 01, 01, 0, 0, 0, DateTimeKind.Utc).ToString("f")) { Index = 0, IsMined = true };
 
-                block.Sign(privateKey, publicKey);
+                //block.Sign(privateKey, publicKey);
                 _context.Blocks.Add(block);
                 _context.SaveChanges();
             }
@@ -71,7 +71,7 @@ namespace Blockchain_Example1.Services.Repository
             return await _context.Set<T>().FindAsync(id);
         }
 
-        public virtual async Task<IEnumerable<T>> GetListDataAsync()
+        public virtual async Task<List<T>> GetListDataAsync()
         {
             return await _context.Set<T>().ToListAsync();
         }
@@ -97,6 +97,20 @@ namespace Blockchain_Example1.Services.Repository
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<List<Block>> GetLastNBlocksWithoutGenesis(int skip, int takeLast)
+        {
+            return await _context.Blocks
+                .Where(b => b.Index > skip)
+                .OrderByDescending(b => b.Index)
+                .Take(takeLast)
+                .OrderBy(b => b.Index)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetCountOfBlocks()
+        {
+            return await _context.Blocks.CountAsync();
+        }
 
         // Methods for [Wallet] entity
         public async Task<Wallet> GetWalletByAddress(string fromAddress)
@@ -122,7 +136,7 @@ namespace Blockchain_Example1.Services.Repository
         public async Task<List<Transaction>> GetMempoolAsync()
         {
             return await _context.Transactions
-                .Where(t => t.BlockId == null) // транзакції без блока = mempool
+                .Where(t => t.BlockId == null) 
                 .ToListAsync();
         }
 

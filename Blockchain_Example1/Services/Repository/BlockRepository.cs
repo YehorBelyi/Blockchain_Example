@@ -7,9 +7,9 @@ namespace Blockchain_Example1.Services
     public class BlockRepository : EFRepository<Block>
     {
         private readonly BlockchainContext _context;
-        public BlockRepository(BlockchainContext context):base(context)
+        public BlockRepository(IDbContextFactory<BlockchainContext> factory) :base(factory)
         {
-            _context = context;
+            //_context = context;
         }
     }
 }

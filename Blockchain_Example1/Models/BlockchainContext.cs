@@ -6,6 +6,7 @@ namespace Blockchain_Example1.Models
     {
         public BlockchainContext(DbContextOptions<BlockchainContext> options):base(options)
         {
+            //Database.EnsureDeleted();
             Database.EnsureCreated();
         }
 

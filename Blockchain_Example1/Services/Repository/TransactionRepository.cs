@@ -7,9 +7,9 @@
         public class TransactionRepository : EFRepository<Transaction>
         {
             private readonly BlockchainContext _context;
-            public TransactionRepository(BlockchainContext context):base(context)
+            public TransactionRepository(IDbContextFactory<BlockchainContext> factory) :base(factory)
             {
-                _context = context;
+                //_context = context;
             }
         }
     }

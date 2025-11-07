@@ -6,7 +6,7 @@ namespace Blockchain_Example1.Services.Repository
     public interface IRepository<T>
     {
         void CreateGenesisBlock(string privateKey, string publicKey);
-        Task<IEnumerable<T>> GetListDataAsync();
+        Task<List<T>> GetListDataAsync();
 
         Task<T?> GetDataAsync(int id);
 
@@ -31,5 +31,10 @@ namespace Blockchain_Example1.Services.Repository
         Task ClearMempoolAsync();
 
         Task<decimal> GetWalletBalanceAsync(string address);
+
+        Task<List<Block>> GetLastNBlocksWithoutGenesis(int skip, int takeLast);
+
+        Task<int> GetCountOfBlocks();
     }
+
 }

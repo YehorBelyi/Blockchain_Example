@@ -37,6 +37,13 @@ namespace Blockchain_Example1.Models
             Hash = ComputeHash();
         }
 
+        public Block(string previousHash, string dateTime)
+        {
+            PreviousHash = previousHash;
+            Timestamp = dateTime;
+            Hash = ComputeHash();
+        }
+
         public void SetTransaction(List<Transaction> transactions)
         {
             Transactions.Clear();

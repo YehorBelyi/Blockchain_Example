@@ -1,7 +1,12 @@
-﻿<div class="d-flex flex-row gap-3 my-3">
+﻿@{
+    var nodeId = ViewBag.CurrentNodeId as string ?? "A";
+}
+
+<div class="d-flex flex-row gap-3 my-3">
     <div class="shadow rounded p-4">
         <h4>Handle mining</h4>
         <form method="post" asp-action="MinePending" class="row g-3 align-items-center" id="addBlockForm">
+            <input type="hidden" name="nodeId" value="@nodeId" />
             <div class="col-auto">
                 <input type="text" name="privateKey" id="privateKey" placeholder="Enter private key" class="form-control" />
             </div>
@@ -22,6 +27,7 @@
     <div class="shadow rounded p-4">
         <h4>Change mining difficulty</h4>
         <form method="post" asp-action="SetDifficulty" class="row">
+            <input type="hidden" name="nodeId" value="@nodeId" />
             <div class="col-auto">
                 <input type="number" name="difficulty" id="difficulty" placeholder="Enter difficulty" class="form-control" />
             </div>

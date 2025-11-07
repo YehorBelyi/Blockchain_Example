@@ -3,8 +3,10 @@ using Blockchain_Example1.Services;
 using Blockchain_Example1.Services.Repository;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Net;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Blockchain_Example1.Services
 {
@@ -22,36 +24,67 @@ namespace Blockchain_Example1.Services
         public string PublicKeyXml { get => publicKey; set => publicKey = value; }
 
         // [27.10.25] Mining block
-        public static int Difficulty { get; set; } = 3;
+        public static int Difficulty { get; set; } = 1;
         private static readonly SemaphoreSlim _chainLock = new(1, 1);
 
         // [31.10.25] Transactions, mempool
-        public Dictionary<string, Wallet> Wallets { get; set; } = new Dictionary<string, Wallet>();
+        //public Dictionary<string, Wallet> Wallets { get; set; } = new Dictionary<string, Wallet>();
         //public List<Transaction> Mempool { get; set; } = new List<Transaction>();
         public const decimal MinerReward = 1.0m;
 
+        // Dynamic change of difficulty while meaning to balance chain load
+        private const int TargetBlockTimeSeconds = 10; // time to mine one block
+        private const int AdjustEveryBlocks = 5; // 
+        private const double Tolerance = 0.2; // +- 20%
+
         public BlockchainService(IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository, RSAService rsaService, ILogger<BlockchainService> logger)
         {
-            _rsaService = rsaService;
+            _rsaService = rsaService ?? new RSAService();
             (privateKey, publicKey) = _rsaService.GetRSAKeys();
 
             _blockRepository = blockRepository;
-            _blockRepository.CreateGenesisBlock(PrivateKey, PublicKeyXml);
-
             _walletRepository = walletRepository;
             _transactionRepository = transactionRepository;
             _logger = logger;
 
-            //// [MOVED TO Repository.cs]
-            //// creating genesis block when initializing the service
-            //if (!_context.Blocks.Any())
-            //{
-            //    var block = new Block("0") { Index = 0, IsMined = true };
+            if (_blockRepository != null)
+            {
+                _blockRepository.CreateGenesisBlock(privateKey, publicKey);
+            }
+        }
 
-            //    block.Sign(PrivateKey, PublicKeyXml);
-            //    _context.Blocks.Add(block);
-            //    _context.SaveChanges();
-            //}
+        private async Task AdjustDifficultyIfNeeded()
+        {
+            var chainCount = await _blockRepository.GetCountOfBlocks();
+            if (chainCount % AdjustEveryBlocks != 0 || chainCount < AdjustEveryBlocks)
+            {
+                return;
+            }
+
+            var recent = await _blockRepository.GetLastNBlocksWithoutGenesis(1, AdjustEveryBlocks);
+
+            if (recent.Count < AdjustEveryBlocks)
+            {
+                return;
+            }
+
+            var avgMs = recent.Average(b => b.MiningDurationMs);
+            // in milliseconds
+            var targetMs = TargetBlockTimeSeconds * 1000;
+
+            var lowerBound = targetMs * (1 - Tolerance);
+            var upperBound = targetMs * (1 + Tolerance);
+
+            if (avgMs < lowerBound)
+            {
+                Difficulty++;
+            } else if (avgMs > upperBound && Difficulty > 1)
+            {
+                Difficulty--;
+            }
+
+            if (Difficulty < 1) Difficulty = 1;
+            if (Difficulty > 10) Difficulty = 10;
         }
 
         public async Task<Wallet> RegisterWallet(string publicKeyXml, string displayName)
@@ -136,6 +169,7 @@ namespace Blockchain_Example1.Services
                 {
                     // Mine this block to add it to the chain
                     await newBlock.MineAsync(Difficulty);
+                    await AdjustDifficultyIfNeeded();
                     newBlock.Sign(privateKey, minerPublicKeyXml);
                     newBlock.IsMined = true;
 
@@ -248,6 +282,27 @@ namespace Blockchain_Example1.Services
             return chainStillValid;
         }
 
+        // Overloaded function to chain validity of the incoming chain
+        public async Task<bool> IsChainValid(List<Block> chain)
+        {
+            if (chain.Count == 0) return true;
+
+            if (!chain[0].Verify()) return false;
+            if (chain[0].Hash != chain[0].ComputeHash()) return false;
+
+            for (int i = 1; i < chain.Count; i++)
+            {
+                var current = chain[i];
+                var previous = chain[i - 1];
+
+                if (current.PreviousHash != previous.Hash) return false;
+                if (!current.HashValidProof()) return false;
+                if (!current.Verify()) return false;
+                if (current.Hash != current.ComputeHash()) return false;
+            }
+            return true;
+        }
+
         // Proccess balances for all wallets
         public async Task<Dictionary<string, decimal>> GetBalances(bool includeToMempool = false)
         {
@@ -353,5 +408,104 @@ namespace Blockchain_Example1.Services
             var sig = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             return Convert.ToBase64String(sig);
         }
+
+        public async Task<bool> TryAddExternalChain(List<Block> externalChain)
+        {
+            if (_blockRepository == null || _walletRepository == null || _transactionRepository == null)
+            {
+                _logger.LogWarning("Node is not properly initialized. Database repositories are unavailable.");
+                return false;
+            }
+
+            await _chainLock.WaitAsync();
+            try
+            {
+                var currentChain = await _blockRepository.GetChain();
+
+                // Check length of the incoming chain
+                if (externalChain == null || externalChain.Count == 0)
+                {
+                    _logger.LogWarning("Received empty external chain.");
+                    return false;
+                }
+
+                if (externalChain.Count <= currentChain.Count)
+                {
+                    _logger.LogInformation("External chain is not longer than current one.");
+                    return false;
+                }
+
+                // Check validity of the first block
+                if (!externalChain.First().Verify())
+                {
+                    _logger.LogWarning("Genesis block signature invalid.");
+                    return false;
+                }
+
+                for (int i = 1; i < externalChain.Count; i++)
+                {
+                    var prevBlock = externalChain[i - 1];
+                    var currBlock = externalChain[i];
+
+                    // PreviousHash must match Hash from previous block
+                    if (currBlock.PreviousHash != prevBlock.Hash)
+                    {
+                        _logger.LogWarning($"Invalid chain link at block {currBlock.Index}: PrevHash mismatch.");
+                        return false;
+                    }
+
+                    if (!currBlock.Verify())
+                    {
+                        _logger.LogWarning($"Invalid signature at block {currBlock.Index}.");
+                        return false;
+                    }
+
+                    if (!currBlock.HashValidProof())
+                    {
+                        _logger.LogWarning($"Invalid proof of work at block {currBlock.Index}.");
+                        return false;
+                    }
+
+                    if (currBlock.Hash != currBlock.ComputeHash())
+                    {
+                        _logger.LogWarning($"Hash mismatch at block {currBlock.Index}.");
+                        return false;
+                    }
+                }
+
+                // If external chain is valid, update local chain that is in database
+                foreach (var block in currentChain)
+                {
+                    await _blockRepository.DeleteDataAsync(block.Index);
+                }
+
+                await _transactionRepository.ClearMempoolAsync();
+
+                // Adding block to the local chain from externail chain
+                foreach (var block in externalChain)
+                {
+                    await _blockRepository.AddDataAsync(block);
+
+                    foreach (var tx in block.Transactions)
+                    {
+                        tx.BlockId = block.Index;
+                        await _transactionRepository.AddDataAsync(tx);
+                    }
+                }
+
+                _logger.LogInformation("External chain successfully synchronized.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during external chain synchronization.");
+                return false;
+            }
+            finally
+            {
+                _chainLock.Release();
+            }
+        }
+
     }
 }

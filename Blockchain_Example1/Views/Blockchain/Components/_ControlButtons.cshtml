@@ -1,4 +1,8 @@
-﻿<div class="my-4 d-flex gap-3">
+﻿@{
+    var nodeId = ViewBag.CurrentNodeId as string ?? "A";
+}
+
+<div class="my-4 d-flex gap-3">
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#privateKeyModal">
         Show Private Key
     </button>
@@ -12,6 +16,7 @@
         Use Mempool
     </button>
     <form method="post" asp-action="DemoSetup">
+        <input type="hidden" name="nodeId" value="@nodeId"/>
         <button type="submit" class="btn btn-danger">
             Demo Setup
         </button>

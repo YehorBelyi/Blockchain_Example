@@ -1,16 +1,38 @@
 ﻿@model IEnumerable<Blockchain_Example1.Models.Block>
 
+@{
+    ViewData["Title"] = "View";
+    var nodeId = ViewBag.CurrentNodeId as string ?? "A";
+    var nodes = ViewBag.Nodes as List<string> ?? new List<string>();
+}
+
+<div>
+    <form method="get" asp-action="Index" style="display:inline-block">
+        <label>Поточний вузол</label>
+        <select name="nodeId">
+            @foreach(var n in nodes)
+            {
+                if (n == nodeId)
+                {
+                    <option selected="selected" value="@n">Node @n</option>
+                }
+                else
+                {
+                    <option value="@n">Node @n</option>
+                }
+            }
+        </select>
+        <input type="submit" value="Switch"/>
+    </form>
+</div>
+
+
 @* Importing modals *@
 @await Html.PartialAsync("Components/_PrivateKeyModal")
 @await Html.PartialAsync("Components/_PublicKeyModal")
 @await Html.PartialAsync("Components/_RegisterWalletModal")
 @await Html.PartialAsync("Components/_MempoolModal")
 
-
-@{
-    ViewData["Title"] = "View";
-
-}
 
 @await Html.PartialAsync("Components/_ControlButtons")
 @await Html.PartialAsync("Components/_WalletList")

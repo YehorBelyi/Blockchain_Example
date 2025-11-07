@@ -1,4 +1,8 @@
-﻿<div class="modal fade" id="mempoolModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+﻿@{
+    var nodeId = ViewBag.CurrentNodeId as string ?? "A";
+}
+
+<div class="modal fade" id="mempoolModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -6,6 +10,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" asp-action="CreateTransaction">
+                <input type="hidden" name="nodeId" value="@nodeId" />
                 <div class="modal-body modal-key overflow-auto" style="overflow-wrap: anywhere">
                     <input type="text" name="fromAddress" placeholder="From Address (ADDR_...)" />
                     <input type="text" name="toAddress" placeholder="To Address (ADDR_...)" />
