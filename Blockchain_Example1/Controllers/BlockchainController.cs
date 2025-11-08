@@ -281,6 +281,7 @@ namespace Blockchain_Example1.Controllers
 
 
             var fullChain = await _blockRepository.GetChain();
+            var countOfNodes = _nodeKeys.Keys.Count();
 
             foreach (var nodeId in _nodeKeys.Keys)
             {
@@ -295,6 +296,7 @@ namespace Blockchain_Example1.Controllers
                     {
                         _logger.LogWarning($"Failed to sync chain from node {fromNodeId} to node {nodeId}.");
                     }
+                TempData["BroadcastMessage"] = $"Block #{fullChain.LastOrDefault().Index} was broadcasted. Accepted: {countOfNodes - 1} of {countOfNodes} nodes";
                 //}
                 //catch (Exception ex)
                 //{

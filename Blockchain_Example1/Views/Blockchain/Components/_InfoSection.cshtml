@@ -1,4 +1,8 @@
-﻿<hr />
+﻿@{
+    string? broadcastMessage = TempData["BroadcastMessage"] as string;
+}
+
+<hr />
 
 <h1>Blockchain Maintainance</h1>
 
@@ -18,3 +22,11 @@ else
 <div class="alert alert-warning">
     Mining difficulty: @ViewBag.Difficulty
 </div>
+
+@if (!string.IsNullOrEmpty(broadcastMessage))
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        @broadcastMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
