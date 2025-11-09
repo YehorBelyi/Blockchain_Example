@@ -3,24 +3,44 @@
 }
 
 <div class="modal fade" id="mempoolModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Register Wallet</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-header bg-primary text-white">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Add Transaction to Mempool</h1>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" asp-action="CreateTransaction">
+            <form method="post" asp-action="CreateTransaction" class="p-3">
                 <input type="hidden" name="nodeId" value="@nodeId" />
-                <div class="modal-body modal-key overflow-auto" style="overflow-wrap: anywhere">
-                    <input type="text" name="fromAddress" placeholder="From Address (ADDR_...)" />
-                    <input type="text" name="toAddress" placeholder="To Address (ADDR_...)" />
-                    <input type="number" name="amount" placeholder="Amount" />
-                    <input type="text" name="fee" placeholder="Fee" />
-                    <input type="text" name="privateKey" placeholder="Private Key" />
-                    <input type="text" name="note" placeholder="Note" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">From Address</label>
+                        <input type="text" name="fromAddress" class="form-control" placeholder="ADDR_..." required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">To Address</label>
+                        <input type="text" name="toAddress" class="form-control" placeholder="ADDR_..." required />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" name="amount" class="form-control" placeholder="Amount" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fee</label>
+                            <input type="number" name="fee" class="form-control" placeholder="Fee" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Private Key</label>
+                        <input type="text" name="privateKey" class="form-control" placeholder="Private Key" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="Transaction note (optional)"></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add to mempool</button>
+                    <button type="submit" class="btn btn-success px-4">Add to Mempool</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </form>

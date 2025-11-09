@@ -8,24 +8,24 @@
 
 @if (ViewBag.IsValid)
 {
-    <div class="alert alert-success" role="alert">
-        Blockchain validation status: @ViewBag.IsValid
+    <div class="alert alert-success text-center" role="alert">
+        <strong>Blockchain validation status:</strong> @ViewBag.IsValid
     </div>
 }
 else
 {
-    <div class="alert alert-danger" role="alert">
-        Blockchain status: @ViewBag.IsValid
+    <div class="alert alert-danger text-center" role="alert">
+        <strong>Blockchain status:</strong> @ViewBag.IsValid
     </div>
 }
 
-<div class="alert alert-warning">
-    Mining difficulty: @ViewBag.Difficulty
+<div class="alert alert-warning text-center">
+    <strong>Mining difficulty:</strong> @ViewBag.Difficulty <> <strong>Average mining time:</strong> @ViewBag.AverageMiningTime s
 </div>
 
 @if (!string.IsNullOrEmpty(broadcastMessage))
 {
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <div class="alert alert-warning alert-dismissible fade show text-center" role="alert">
         @broadcastMessage
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>

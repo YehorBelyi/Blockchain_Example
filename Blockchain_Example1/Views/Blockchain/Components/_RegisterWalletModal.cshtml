@@ -3,21 +3,26 @@
 }
 
 <div class="modal fade" id="registerWalletModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0 rounded-4">
+            <div class="modal-header bg-primary text-white">
                 <h1 class="modal-title fs-5" id="exampleModalLabel">Register Wallet</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" asp-action="RegisterWallet">
+            <form method="post" asp-action="RegisterWallet" class="p-3">
                 <input type="hidden" name="nodeId" value="@nodeId" />
-                <div class="modal-body modal-key overflow-auto" style="overflow-wrap: anywhere">
-                    <input type="text" name="displayName" placeholder="Enter owner name" />
-                    <input type="text" name="publicKeyXml" placeholder="Enter public key XML" />
-                    <input type="submit" placeholder="Register wallet" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Owner Name</label>
+                        <input type="text" name="displayName" class="form-control" placeholder="Enter owner name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Public Key (XML)</label>
+                        <textarea name="publicKeyXml" class="form-control" rows="4" placeholder="Paste your public key XML here" required></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Register</button>
+                    <button type="submit" class="btn btn-success px-4">Register</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </form>

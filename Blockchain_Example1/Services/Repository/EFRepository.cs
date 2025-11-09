@@ -97,6 +97,11 @@ namespace Blockchain_Example1.Services.Repository
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<Block?> GetBlockWithTransactions(int id)
+        {
+            return await _context.Blocks.Include(b => b.Transactions).FirstOrDefaultAsync(b => b.Index == id);
+        }
+
         public async Task<List<Block>> GetLastNBlocksWithoutGenesis(int skip, int takeLast)
         {
             return await _context.Blocks

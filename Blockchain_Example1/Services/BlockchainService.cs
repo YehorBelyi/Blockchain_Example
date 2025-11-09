@@ -37,6 +37,8 @@ namespace Blockchain_Example1.Services
         private const int AdjustEveryBlocks = 5; // 
         private const double Tolerance = 0.2; // +- 20%
 
+        public double AverageMiningTime { get; set; }
+
         public BlockchainService(IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository, RSAService rsaService, ILogger<BlockchainService> logger)
         {
             _rsaService = rsaService ?? new RSAService();
@@ -63,12 +65,14 @@ namespace Blockchain_Example1.Services
 
             var recent = await _blockRepository.GetLastNBlocksWithoutGenesis(1, AdjustEveryBlocks);
 
+            var avgMs = recent.Average(b => b.MiningDurationMs);
+            AverageMiningTime = avgMs;
+
             if (recent.Count < AdjustEveryBlocks)
             {
                 return;
             }
 
-            var avgMs = recent.Average(b => b.MiningDurationMs);
             // in milliseconds
             var targetMs = TargetBlockTimeSeconds * 1000;
 
@@ -505,6 +509,11 @@ namespace Blockchain_Example1.Services
             {
                 _chainLock.Release();
             }
+        }
+
+        public async Task<Block?> GetBlockWithTransactions(int id)
+        {
+            return await _blockRepository.GetBlockWithTransactions(id);
         }
 
     }

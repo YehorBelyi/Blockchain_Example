@@ -60,25 +60,31 @@
                 });
             }
 
-            const copyButton = document.getElementById("copyKeyButton");
-            copyButton.addEventListener("click", () => {
-                const keyText = document.querySelector(".modal-key").innerText.trim();
+            const copyButtons = document.querySelectorAll(".copyKeyButton");
 
-                navigator.clipboard.writeText(keyText).then(() => {
-                    copyButton.textContent = "Copied!";
-                    copyButton.classList.remove("btn-primary");
-                    copyButton.classList.add("btn-success");
+            copyButtons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const modal = btn.closest(".modal");
+                    const keyTextElement = modal.querySelector(".modal-key");
+                    const keyText = keyTextElement.innerText.trim();
 
-                    setTimeout(() => {
-                        copyButton.textContent = "Copy Key";
-                        copyButton.classList.remove("btn-success");
-                        copyButton.classList.add("btn-primary");
-                    }, 1500);
-                }).catch(err => {
-                    console.error("Clipboard copy failed:", err);
-                    alert("Failed to copy key!");
+                    navigator.clipboard.writeText(keyText).then(() => {
+                        btn.textContent = "Copied!";
+                        btn.classList.remove("btn-primary");
+                        btn.classList.add("btn-success");
+
+                        setTimeout(() => {
+                            btn.textContent = "Copy Key";
+                            btn.classList.remove("btn-success");
+                            btn.classList.add("btn-primary");
+                        }, 1500);
+                    }).catch(err => {
+                        console.error("Clipboard copy failed:", err);
+                        alert("Failed to copy key!");
+                    });
                 });
-            });
+        });
+            
 
         });
 

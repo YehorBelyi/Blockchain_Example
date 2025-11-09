@@ -63,11 +63,14 @@ namespace Blockchain_Example1.Controllers
 
             var chain = await _blockRepository.GetChain();
             var validation = ValidateChain(chain, nodeId);
+            var averageMiningTime = (service.AverageMiningTime / 1000).ToString();  // given - in ms, in view - in s
+            var amtFormatted = averageMiningTime.Length > 4 ? averageMiningTime.Substring(0, 4) : averageMiningTime; 
 
             ViewBag.ValidBlocks = validation.ValidBlocks;
             ViewBag.SignatureValidity = validation.SignatureValidity;
             ViewBag.IsValid = validation.IsChainValid;
             ViewBag.Difficulty = BlockchainService.Difficulty;
+            ViewBag.AverageMiningTime = amtFormatted;
 
             ViewBag.PrivateKey = service.PrivateKey;
             ViewBag.PublicKey = service.PublicKeyXml;
@@ -102,6 +105,13 @@ namespace Blockchain_Example1.Controllers
             return RedirectToAction("Index");
         }
 
+        public async Task<IActionResult> Details(int id, string nodeId)
+        {
+            GetNodeScope(nodeId, out var _blockchainService);
+            var block = await _blockchainService.GetBlockWithTransactions(id);
+            return View(block);
+        }
+             
         // [27.10.25] Set mining difficulty
         [HttpPost]
         public IActionResult SetDifficulty(int difficulty, string nodeId)
@@ -200,27 +210,27 @@ namespace Blockchain_Example1.Controllers
             decimal amount = 5.0m;
             decimal fee = 0.5m;
 
-            var tx = new Transaction
-            {
-                FromAddress = Ivan.Address,
-                ToAddress = Taras.Address,
-                Amount = amount,
-                Fee = fee,
-                Note = "Test payment service"
-            };
+            //var tx = new Transaction
+            //{
+            //    FromAddress = Ivan.Address,
+            //    ToAddress = Taras.Address,
+            //    Amount = amount,
+            //    Fee = fee,
+            //    Note = "Test payment service"
+            //};
 
-            // Getting some coins for test users so their balance won't be 0
-            for (int i = 0; i < 5; i++)
-            {
-                await MinePending(privateKey1, nodeId);
-                await MinePending(privateKey2, nodeId);
-            }
+            //// Getting some coins for test users so their balance won't be 0
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    await MinePending(privateKey1, nodeId);
+            //    await MinePending(privateKey2, nodeId);
+            //}
 
-            var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
+            //var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
 
-            tx.Signature = sig;
+            //tx.Signature = sig;
 
-            await service.CreateTransaction(tx);
+            //await service.CreateTransaction(tx);
             return RedirectToAction("Index", new { nodeId });
 
         }

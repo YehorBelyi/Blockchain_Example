@@ -55,7 +55,7 @@ else
                         <span class="badge text-bg-primary">@Html.DisplayFor(modelItem => item.Nonce) atts</span>
                     </td>
                     <td>
-                        <span class="badge text-bg-secondary">@Html.DisplayFor(modelItem => item.MiningDurationMs) ms</span>
+                        <span class="badge text-bg-secondary">@(item.MiningDurationMs/1000) s</span>
                     </td>
                     <td>
                         @Html.DisplayFor(modelItem => item.Index)
@@ -84,8 +84,8 @@ else
                     </td>
                     <td>
                         @Html.ActionLink("Edit", "Edit", new { id = item.Index }, new { @class = "btn btn-warning" })
-                        @* @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-secondary" })
-                @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-danger" }) *@
+                        @Html.ActionLink("Details", "Details", new { id=item.Index }, new { @class = "btn btn-secondary" })
+                @* @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ }, new { @class = "btn btn-danger" }) *@
                     </td>
                 </tr>
             }

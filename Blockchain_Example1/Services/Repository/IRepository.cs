@@ -35,6 +35,8 @@ namespace Blockchain_Example1.Services.Repository
         Task<List<Block>> GetLastNBlocksWithoutGenesis(int skip, int takeLast);
 
         Task<int> GetCountOfBlocks();
+
+        Task<Block?> GetBlockWithTransactions(int id);
     }
 
 }

@@ -1,0 +1,106 @@
+﻿@model Blockchain_Example1.Models.Block
+
+@{
+    ViewData["Title"] = "Block Details";
+    string shortenString(string s, int n = 16) => s.Length > n ? s.Substring(0, n) + "..." : s;
+}
+
+<div class="container mt-4">
+    <div class="card shadow border-0 rounded-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Block Details</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <tbody>
+                    <tr>
+                        <th scope="row">Previous Hash</th>
+                        <td class="text-break">@Model.PreviousHash</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Hash</th>
+                        <td class="text-break">@Model.Hash</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Timestamp</th>
+                        <td>@Model.Timestamp</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Signature</th>
+                        <td class="text-break">@shortenString(Model.Signature ?? "")</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Nonce</th>
+                        <td>@Model.Nonce</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Difficulty</th>
+                        <td>@Model.Difficulty</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Mining Duration (ms)</th>
+                        <td>@Model.MiningDurationMs</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Is Mined</th>
+                        <td>
+                            @if (Model.IsMined)
+                            {
+                                <span class="badge bg-success">Yes</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">No</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-end">
+            <a asp-action="Edit" asp-route-id="@Model?.Index" class="btn btn-warning me-2">
+                <i class="bi bi-pencil-square"></i> Edit
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<hr class="my-3"/>
+
+<h1>Transactions</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                From Address
+            </th>
+            <th>
+                To Address
+            </th>
+            <th>
+                Amount
+            </th>
+            <th>
+                Fee
+            </th>
+            <th>
+                Note
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tx in Model.Transactions)
+        {
+            <tr class="@(tx.FromAddress.Equals("COINBASE", StringComparison.OrdinalIgnoreCase) ? "table-warning" : "")">
+                <td>@tx.FromAddress</td>
+                <td>@tx.ToAddress</td>
+                <td>@tx.Amount</td>
+                <td>@tx.Fee</td>
+                <td>@tx.Note</td>
+            </tr>
+        }
+    </tbody>
+</table>
