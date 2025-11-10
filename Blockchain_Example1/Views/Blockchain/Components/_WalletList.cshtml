@@ -26,15 +26,13 @@ else
                 <th>Address</th>
                 <th>Name</th>
                 <th>Balance</th>
-                <th>Public Key</th>
-                <th>Joined On</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var wallet in wallets)
             {
                 <tr>
-                    <td>@wallet.Address</td>
+                    <td><a asp-action="WalletDetails" asp-route-id="@wallet.Id">@wallet.Address</a></td>
                     <td>@wallet.DisplayName</td>
                     @if (balances.ContainsKey(wallet.Address)) {
                         <td>@balances[wallet.Address]</td>
@@ -43,9 +41,6 @@ else
                     {
                         <td>0</td>
                     }
-
-                    <td>@shortenString(wallet.PublicKeyXml)</td>
-                    <td>@wallet.JoinedOn.ToString("u")</td>
                 </tr>
             }
         </tbody>

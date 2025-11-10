@@ -30,7 +30,11 @@ namespace Blockchain_Example1.Services
         // [31.10.25] Transactions, mempool
         //public Dictionary<string, Wallet> Wallets { get; set; } = new Dictionary<string, Wallet>();
         //public List<Transaction> Mempool { get; set; } = new List<Transaction>();
-        public const decimal MinerReward = 1.0m;
+        //public const decimal MinerReward = 1.0m;
+
+        // [10.11.2025] Halving
+        private const decimal BaseMinerReward = 1.0m;
+        private int HalvingBlockInterval = 5;
 
         // Dynamic change of difficulty while meaning to balance chain load
         private const int TargetBlockTimeSeconds = 10; // time to mine one block
@@ -145,26 +149,25 @@ namespace Blockchain_Example1.Services
                 // Getting mempool straight from database
                 var mempool = await _transactionRepository.GetMempoolAsync();
 
-
                 // Fee from all transactions for mining
                 decimal totalFee = mempool.Sum(t => t.Fee);
+                //var minerReward = GetCurrentBlockReward(previousBlock.Index+1);
                 // Generate a block from system that notifies about getting reward for mining and adding all transactions
                 var bath = new List<Transaction>() {
                 new Transaction
                 {
                     FromAddress = "COINBASE",
                     ToAddress = minerAddress,
-                    Amount = MinerReward + totalFee
+                    Amount = BaseMinerReward + totalFee
                 },
             };
 
                 // Add all transactions from mempool
                 bath.AddRange(mempool);
 
+
                 var previousBlock = await _blockRepository.GetLastBlock();
-
                 var newBlock = new Block(previousBlock.Hash);
-
                 // Add all transactions to the block
                 newBlock.SetTransaction(bath);
                 await _blockRepository.AddDataAsync(newBlock);
@@ -516,5 +519,36 @@ namespace Blockchain_Example1.Services
             return await _blockRepository.GetBlockWithTransactions(id);
         }
 
+        public async Task<(Wallet? wallet, decimal balance, List<Transaction> transactions)> GetWallet(int id)
+        {
+            var wallet = await _walletRepository.GetWallet(id);
+
+            var balance = await _walletRepository.GetWalletBalanceAsync(wallet.Address);
+            var transactions = await _transactionRepository.GetWalletTransactionsAsync(wallet.Address);
+
+            return (wallet, balance, transactions);
+        }
+
+        public async Task<Block?> GetLastBlock()
+        {
+            return await _blockRepository.GetLastBlock();
+        }
+
+        // [10.11.25] Halving
+        public decimal GetCurrentBlockReward(int newBlockIndex)
+        {
+            if (newBlockIndex < 1) return 0;
+
+            int halvings = (newBlockIndex / HalvingBlockInterval);
+
+            decimal reward = BaseMinerReward;
+
+            for (int i = 0; i < halvings; i++)
+            {
+                reward /= 2;
+            }
+
+            return reward;
+        }
     }
 }

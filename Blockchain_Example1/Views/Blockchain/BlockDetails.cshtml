@@ -89,6 +89,7 @@
             <th>
                 Note
             </th>
+            <th>Confirmations</th>
         </tr>
     </thead>
     <tbody>
@@ -100,6 +101,7 @@
                 <td>@tx.Amount</td>
                 <td>@tx.Fee</td>
                 <td>@tx.Note</td>
+                <td>@(ViewBag.LastBlockIndex - tx.Id)</td>
             </tr>
         }
     </tbody>

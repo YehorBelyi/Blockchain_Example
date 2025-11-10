@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.WebSockets;
 using Blockchain_Example1.Models;
 using Blockchain_Example1.Services;
 using Blockchain_Example1.Services.Repository;
@@ -82,6 +83,8 @@ namespace Blockchain_Example1.Controllers
             ViewBag.Nodes = _nodeKeys.Keys.ToList();
             ViewBag.CurrentNodeId = nodeId;
 
+
+
             return View(chain);
 
         }
@@ -105,13 +108,31 @@ namespace Blockchain_Example1.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Details(int id, string nodeId)
+        public async Task<IActionResult> BlockDetails(int id, string nodeId)
         {
             GetNodeScope(nodeId, out var _blockchainService);
             var block = await _blockchainService.GetBlockWithTransactions(id);
+            var lastBlock = await _blockchainService.GetLastBlock();
+            ViewBag.LastBlockIndex = lastBlock.Index;
             return View(block);
         }
-             
+
+        public async Task<IActionResult> WalletDetails(int id, string nodeId)
+        {
+            GetNodeScope(nodeId, out var blockchainService);
+            var (wallet, balance, transactions) = await blockchainService.GetWallet(id);
+
+            if (wallet == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.ThisWalletBalance = balance;
+            ViewBag.WalletTransactions = transactions;
+
+            return View(wallet);
+        }
+
         // [27.10.25] Set mining difficulty
         [HttpPost]
         public IActionResult SetDifficulty(int difficulty, string nodeId)
@@ -207,30 +228,30 @@ namespace Blockchain_Example1.Controllers
             var (Ivan, privateKey1) = await service.DemoCreateWallet("Ivan");
             var (Taras, privateKey2) = await service.DemoCreateWallet("Taras");
 
-            decimal amount = 5.0m;
+            decimal amount = 2.0m;
             decimal fee = 0.5m;
 
-            //var tx = new Transaction
-            //{
-            //    FromAddress = Ivan.Address,
-            //    ToAddress = Taras.Address,
-            //    Amount = amount,
-            //    Fee = fee,
-            //    Note = "Test payment service"
-            //};
+            var tx = new Transaction
+            {
+                FromAddress = Ivan.Address,
+                ToAddress = Taras.Address,
+                Amount = amount,
+                Fee = fee,
+                Note = "Test payment service"
+            };
 
-            //// Getting some coins for test users so their balance won't be 0
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    await MinePending(privateKey1, nodeId);
-            //    await MinePending(privateKey2, nodeId);
-            //}
+            // Getting some coins for test users so their balance won't be 0
+            for (int i = 0; i < 10; i++)
+            {
+                await MinePending(privateKey1, nodeId);
+                await MinePending(privateKey2, nodeId);
+            }
 
-            //var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
+            var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
 
-            //tx.Signature = sig;
+            tx.Signature = sig;
 
-            //await service.CreateTransaction(tx);
+            await service.CreateTransaction(tx);
             return RedirectToAction("Index", new { nodeId });
 
         }

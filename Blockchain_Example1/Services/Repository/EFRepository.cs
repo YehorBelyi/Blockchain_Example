@@ -102,6 +102,11 @@ namespace Blockchain_Example1.Services.Repository
             return await _context.Blocks.Include(b => b.Transactions).FirstOrDefaultAsync(b => b.Index == id);
         }
 
+        public async Task<Wallet?> GetWallet(int id)
+        {
+            return await _context.Wallets.FirstOrDefaultAsync(w => w.Id == id);
+        }
+
         public async Task<List<Block>> GetLastNBlocksWithoutGenesis(int skip, int takeLast)
         {
             return await _context.Blocks
@@ -135,6 +140,14 @@ namespace Blockchain_Example1.Services.Repository
                 .SumAsync(t => (decimal?)(t.Amount + t.Fee)) ?? 0;
 
             return received - sent;
+        }
+
+        public async Task<List<Transaction>> GetWalletTransactionsAsync(string address)
+        {
+            return await _context.Transactions
+                .Where(t => t.FromAddress == address || t.ToAddress == address)
+                .OrderByDescending(t => t.Id) 
+                .ToListAsync();
         }
 
         // Methods for [Mempool] entity
