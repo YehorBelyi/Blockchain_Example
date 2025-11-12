@@ -5,14 +5,15 @@ namespace Blockchain_Example1.Services.Repository
 {
     public class EFRepository<T> : IRepository<T> where T : class
     {
-        private readonly BlockchainContext _context;
+        private readonly IDbContextFactory<BlockchainContext> _factory;
         public EFRepository(IDbContextFactory<BlockchainContext> factory)
         {
-            _context = factory.CreateDbContext();
+            _factory = factory;
         }
         // creating genesis block when initializing the service
         public void CreateGenesisBlock(string privateKey, string publicKey)
         {
+            using var _context = _factory.CreateDbContext();
             if (!_context.Blocks.Any())
             {
                 var block = new Block("0", new DateTime(2025, 01, 01, 0, 0, 0, DateTimeKind.Utc).ToString("f")) { Index = 0, IsMined = true };
@@ -27,6 +28,7 @@ namespace Blockchain_Example1.Services.Repository
         {
             try
             {
+                await using var _context = _factory.CreateDbContext();
                 _context.Set<T>().Add(data);
                 await _context.SaveChangesAsync();
                 return true;
@@ -41,6 +43,7 @@ namespace Blockchain_Example1.Services.Repository
         {
             try
             {
+                await using var _context = _factory.CreateDbContext();
                 _context.Entry(data).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
                 return true;
@@ -55,6 +58,7 @@ namespace Blockchain_Example1.Services.Repository
         {
             try
             {
+                await using var _context = _factory.CreateDbContext();
                 var D = await GetDataAsync(id);
                 _context.Set<T>().Remove(D);
                 await _context.SaveChangesAsync();
@@ -68,22 +72,26 @@ namespace Blockchain_Example1.Services.Repository
 
         public virtual async Task<T?> GetDataAsync(int id)
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Set<T>().FindAsync(id);
         }
 
         public virtual async Task<List<T>> GetListDataAsync()
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Set<T>().ToListAsync();
         }
 
         public async Task<int> SaveDataAsync()
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.SaveChangesAsync();
         }
 
         // Methods for [Block] entity
         public async Task<List<Block>> GetChain()
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Blocks
                 .Include(b => b.Transactions)
                 .OrderBy(b => b.Index)
@@ -92,6 +100,7 @@ namespace Blockchain_Example1.Services.Repository
 
         public async Task<Block?> GetLastBlock()
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Blocks
                 .OrderByDescending(b => b.Index)
                 .FirstOrDefaultAsync();
@@ -99,16 +108,19 @@ namespace Blockchain_Example1.Services.Repository
 
         public async Task<Block?> GetBlockWithTransactions(int id)
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Blocks.Include(b => b.Transactions).FirstOrDefaultAsync(b => b.Index == id);
         }
 
         public async Task<Wallet?> GetWallet(int id)
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Wallets.FirstOrDefaultAsync(w => w.Id == id);
         }
 
         public async Task<List<Block>> GetLastNBlocksWithoutGenesis(int skip, int takeLast)
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Blocks
                 .Where(b => b.Index > skip)
                 .OrderByDescending(b => b.Index)
@@ -119,18 +131,21 @@ namespace Blockchain_Example1.Services.Repository
 
         public async Task<int> GetCountOfBlocks()
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Blocks.CountAsync();
         }
 
         // Methods for [Wallet] entity
         public async Task<Wallet> GetWalletByAddress(string fromAddress)
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Wallets.FirstOrDefaultAsync(w => w.Address == fromAddress);
         }
 
 
         public async Task<decimal> GetWalletBalanceAsync(string address)
         {
+            await using var _context = _factory.CreateDbContext();
             var received = await _context.Transactions
                 .Where(t => t.ToAddress == address)
                 .SumAsync(t => (decimal?)t.Amount) ?? 0;
@@ -144,6 +159,7 @@ namespace Blockchain_Example1.Services.Repository
 
         public async Task<List<Transaction>> GetWalletTransactionsAsync(string address)
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Transactions
                 .Where(t => t.FromAddress == address || t.ToAddress == address)
                 .OrderByDescending(t => t.Id) 
@@ -153,6 +169,7 @@ namespace Blockchain_Example1.Services.Repository
         // Methods for [Mempool] entity
         public async Task<List<Transaction>> GetMempoolAsync()
         {
+            await using var _context = _factory.CreateDbContext();
             return await _context.Transactions
                 .Where(t => t.BlockId == null) 
                 .ToListAsync();
@@ -160,6 +177,7 @@ namespace Blockchain_Example1.Services.Repository
 
         public async Task AddToMempoolAsync(Transaction transaction)
         {
+            await using var _context = _factory.CreateDbContext();
             transaction.BlockId = null;
             await _context.Transactions.AddAsync(transaction);
             await _context.SaveChangesAsync();
@@ -167,6 +185,7 @@ namespace Blockchain_Example1.Services.Repository
 
         public async Task ClearMempoolAsync()
         {
+            await using var _context = _factory.CreateDbContext();
             var pending = _context.Transactions.Where(t => t.BlockId == null);
             _context.Transactions.RemoveRange(pending);
             await _context.SaveChangesAsync();

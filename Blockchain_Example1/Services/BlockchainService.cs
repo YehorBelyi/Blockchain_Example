@@ -34,11 +34,11 @@ namespace Blockchain_Example1.Services
 
         // [10.11.2025] Halving
         private const decimal BaseMinerReward = 1.0m;
-        private int HalvingBlockInterval = 5;
+        private int HalvingBlockInterval = 200;
 
         // Dynamic change of difficulty while meaning to balance chain load
         private const int TargetBlockTimeSeconds = 10; // time to mine one block
-        private const int AdjustEveryBlocks = 5; // 
+        private const int AdjustEveryBlocks = 100; // 
         private const double Tolerance = 0.2; // +- 20%
 
         public double AverageMiningTime { get; set; }
