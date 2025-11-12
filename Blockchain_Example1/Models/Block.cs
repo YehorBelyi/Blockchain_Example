@@ -15,12 +15,12 @@ namespace Blockchain_Example1.Models
         // this field is not needed anymore, since we have List<Transaction> Transactions
         //public string Data { get; set; } = string.Empty; // information that block contains
 
-        public List<Transaction> Transactions { get; set;  } = new();
+        public virtual List<Transaction> Transactions { get; set;  } = new();
         public int TransactionsCount => Transactions.Count;
         public string PreviousHash { get; set; } = string.Empty; // genesis - first block which starts the chain
         public string Hash { get; set; } = string.Empty;
         public string Timestamp { get; set; } = string.Empty;
-        public string? Signature { get; private set; } = string.Empty;// digital signature, private key
+        public string? Signature { get; set; } = string.Empty;// digital signature, private key
         public string? PublicKeyXml { get; private set; } = string.Empty;
 
         // Mining block, Proof of Work (POW)
@@ -54,7 +54,12 @@ namespace Blockchain_Example1.Models
         private string CanonicalizeTransactions()
         {
             var sb = new StringBuilder();
-            foreach (var tx in Transactions)
+            foreach (var tx in Transactions
+                         .OrderBy(t => t.FromAddress)
+                         .ThenBy(t => t.ToAddress)
+                         .ThenBy(t => t.Amount)
+                         .ThenBy(t => t.Fee)
+                         .ThenBy(t => t.Note))
             {
                 sb.Append(tx.CanonicalPayload());
                 sb.Append("|");

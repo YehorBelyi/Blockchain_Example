@@ -144,49 +144,49 @@ namespace Blockchain_Example1.Services
                 rsa.FromXmlString(privateKey);
                 var minerPublicKeyXml = rsa.ToXmlString(false);
                 var minerAddress = (await _walletRepository.GetListDataAsync())
-            .FirstOrDefault(w => w.PublicKeyXml == minerPublicKeyXml)?.Address;
+                    .FirstOrDefault(w => w.PublicKeyXml == minerPublicKeyXml)?.Address;
 
                 // Getting mempool straight from database
                 var mempool = await _transactionRepository.GetMempoolAsync();
 
                 // Fee from all transactions for mining
                 decimal totalFee = mempool.Sum(t => t.Fee);
-                //var minerReward = GetCurrentBlockReward(previousBlock.Index+1);
-                // Generate a block from system that notifies about getting reward for mining and adding all transactions
-                var bath = new List<Transaction>() {
-                new Transaction
-                {
-                    FromAddress = "COINBASE",
-                    ToAddress = minerAddress,
-                    Amount = BaseMinerReward + totalFee
-                },
-            };
-
-                // Add all transactions from mempool
-                bath.AddRange(mempool);
-
 
                 var previousBlock = await _blockRepository.GetLastBlock();
                 var newBlock = new Block(previousBlock.Hash);
-                // Add all transactions to the block
-                newBlock.SetTransaction(bath);
+
                 await _blockRepository.AddDataAsync(newBlock);
 
-                await Task.Run(async () =>
+                var coinbaseTransaction = new Transaction
                 {
-                    // Mine this block to add it to the chain
-                    await newBlock.MineAsync(Difficulty);
-                    await AdjustDifficultyIfNeeded();
-                    newBlock.Sign(privateKey, minerPublicKeyXml);
-                    newBlock.IsMined = true;
+                    FromAddress = "COINBASE",
+                    ToAddress = minerAddress,
+                    Amount = BaseMinerReward + totalFee,
+                    BlockId = newBlock.Index 
+                };
 
-                    await _blockRepository.UpdateDataAsync(newBlock);
-                    await _transactionRepository.ClearMempoolAsync();
-                    //Mempool.Clear();
-                });
+                var allTransactions = new List<Transaction> { coinbaseTransaction };
+                allTransactions.AddRange(mempool);
+
+                foreach (var tx in mempool)
+                {
+                    tx.BlockId = newBlock.Index;
+                }
+
+                
+                newBlock.SetTransaction(allTransactions);
+
+                await newBlock.MineAsync(Difficulty);
+                await AdjustDifficultyIfNeeded();
+                newBlock.Sign(privateKey, minerPublicKeyXml);
+                newBlock.IsMined = true;
+                await _blockRepository.UpdateBlockWithTransactions(newBlock);
+
+                await _transactionRepository.ClearMempoolAsync();
 
                 return newBlock;
-            } finally
+            }
+            finally
             {
                 _chainLock.Release();
             }
@@ -348,7 +348,6 @@ namespace Blockchain_Example1.Services
                 balances[tx.FromAddress] = fromBalance - (tx.Amount + tx.Fee);
             }
 
-            // Додаємо отримувачу
             if (!balances.TryGetValue(tx.ToAddress, out var toBalance))
             {
                 toBalance = 0;

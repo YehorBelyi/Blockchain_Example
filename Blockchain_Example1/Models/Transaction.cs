@@ -25,7 +25,7 @@
             public int? BlockId { get; set; }
 
             [ForeignKey(nameof(BlockId))]
-            public Block? Block { get; set; }
+            public virtual Block? Block { get; set; }
 
             public string CanonicalPayload()
             {

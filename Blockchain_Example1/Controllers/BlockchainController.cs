@@ -83,8 +83,6 @@ namespace Blockchain_Example1.Controllers
             ViewBag.Nodes = _nodeKeys.Keys.ToList();
             ViewBag.CurrentNodeId = nodeId;
 
-
-
             return View(chain);
 
         }
@@ -114,6 +112,7 @@ namespace Blockchain_Example1.Controllers
             var block = await _blockchainService.GetBlockWithTransactions(id);
             var lastBlock = await _blockchainService.GetLastBlock();
             ViewBag.LastBlockIndex = lastBlock.Index;
+            ViewBag.NeededConfirmationCount = 3;
             return View(block);
         }
 
@@ -129,6 +128,10 @@ namespace Blockchain_Example1.Controllers
 
             ViewBag.ThisWalletBalance = balance;
             ViewBag.WalletTransactions = transactions;
+
+            var lastBlock = await blockchainService.GetLastBlock();
+            ViewBag.LastBlockIndex = lastBlock.Index;
+            ViewBag.NeededConfirmationCount = 3;
 
             return View(wallet);
         }
@@ -241,7 +244,7 @@ namespace Blockchain_Example1.Controllers
             };
 
             // Getting some coins for test users so their balance won't be 0
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 20; i++)
             {
                 await MinePending(privateKey1, nodeId);
                 await MinePending(privateKey2, nodeId);

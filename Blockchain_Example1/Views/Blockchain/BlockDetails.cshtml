@@ -101,16 +101,17 @@
                 <td>@tx.Amount</td>
                 <td>@tx.Fee</td>
                 <td>@tx.Note</td>
-                <td>
-                    @if (!tx.FromAddress.Equals("COINBASE", StringComparison.OrdinalIgnoreCase))
-                    {
-                        @(ViewBag.LastBlockIndex - tx.Id)
-                    }
-                    else
-                    {
-                        
-                    }
+                @if (!tx.FromAddress.Equals("COINBASE", StringComparison.OrdinalIgnoreCase))
+                {
+                    var confirmationCount = ViewBag.LastBlockIndex - tx.BlockId;
+                <td class="@(confirmationCount >= 3 ? "table-success" : "table-danger")">
+                    @confirmationCount/@ViewBag.NeededConfirmationCount
                 </td>
+                }
+                else
+                {
+                        
+                }
             </tr>
         }
     </tbody>

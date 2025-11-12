@@ -191,5 +191,34 @@ namespace Blockchain_Example1.Services.Repository
             await _context.SaveChangesAsync();
         }
 
+        public async Task<bool> UpdateBlockWithTransactions(Block block)
+        {
+            try
+            {
+                await using var _context = _factory.CreateDbContext();
+
+                _context.Blocks.Update(block);
+
+                foreach (var tx in block.Transactions)
+                {
+                    if (tx.Id == 0)
+                    {
+                        _context.Transactions.Add(tx);
+                    }
+                    else
+                    {
+                        _context.Transactions.Update(tx);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateBlockWithTransactions Error: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

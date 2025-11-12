@@ -41,6 +41,8 @@ namespace Blockchain_Example1.Services.Repository
         Task<Wallet?> GetWallet(int id);
 
         Task<List<Transaction>> GetWalletTransactionsAsync(string address);
+
+        Task<bool> UpdateBlockWithTransactions(Block block);
     }
 
 }

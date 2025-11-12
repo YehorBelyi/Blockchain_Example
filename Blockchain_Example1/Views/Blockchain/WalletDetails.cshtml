@@ -50,16 +50,27 @@
     <tbody>
         @foreach (var tx in transactions)
         {
-            var isSent = tx.FromAddress.Equals(Model.Address, StringComparison.OrdinalIgnoreCase);
-            var rowClass = isSent ? "table-danger" : (tx.FromAddress.Equals("COINBASE", StringComparison.OrdinalIgnoreCase) ? "table-warning" : "table-success");
-
-            <tr class="@rowClass">
-                <td class="text-break">@tx.FromAddress</td>
-                <td class="text-break">@tx.ToAddress</td>
-                <td>@tx.Amount</td>
-                <td>@tx.Fee</td>
-                <td>@tx.Note</td>
-            </tr>
+            @if (!tx.FromAddress.Equals("COINBASE", StringComparison.OrdinalIgnoreCase))
+            {
+                var confirmationCount = ViewBag.LastBlockIndex - tx.BlockId;
+                <tr class="@(confirmationCount >= 3 ? "table-success" : "table-danger")">
+                    <td class="text-break">@tx.FromAddress</td>
+                    <td class="text-break">@tx.ToAddress</td>
+                    <td>@tx.Amount</td>
+                    <td>@tx.Fee</td>
+                    <td>@tx.Note</td>
+                </tr>
+            }
+            else
+            {
+                <tr>
+                    <td class="text-break">@tx.FromAddress</td>
+                    <td class="text-break">@tx.ToAddress</td>
+                    <td>@tx.Amount</td>
+                    <td>@tx.Fee</td>
+                    <td>@tx.Note</td>
+                </tr>
+            }
         }
         @if (!transactions.Any())
         {

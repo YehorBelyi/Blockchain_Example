@@ -13,5 +13,16 @@ namespace Blockchain_Example1.Models
         public virtual DbSet<Block> Blocks { get; set; }
         public virtual DbSet<Wallet> Wallets { get; set; }
         public virtual DbSet<Transaction> Transactions { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Block>()
+                .HasMany(b => b.Transactions)
+                .WithOne(t => t.Block)
+                .HasForeignKey(t => t.BlockId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }
