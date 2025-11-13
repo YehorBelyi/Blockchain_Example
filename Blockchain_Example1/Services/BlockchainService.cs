@@ -34,11 +34,11 @@ namespace Blockchain_Example1.Services
 
         // [10.11.2025] Halving
         private const decimal BaseMinerReward = 1.0m;
-        private int HalvingBlockInterval = 200;
+        private int HalvingBlockInterval = 100;
 
         // Dynamic change of difficulty while meaning to balance chain load
         private const int TargetBlockTimeSeconds = 10; // time to mine one block
-        private const int AdjustEveryBlocks = 100; // 
+        private const int AdjustEveryBlocks = 10; // 
         private const double Tolerance = 0.2; // +- 20%
 
         public double AverageMiningTime { get; set; }
@@ -161,7 +161,7 @@ namespace Blockchain_Example1.Services
                 {
                     FromAddress = "COINBASE",
                     ToAddress = minerAddress,
-                    Amount = BaseMinerReward + totalFee,
+                    Amount = GetCurrentBlockReward(newBlock.Index) + totalFee,
                     BlockId = newBlock.Index 
                 };
 
