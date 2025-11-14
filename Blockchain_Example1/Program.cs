@@ -9,6 +9,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddBlockchainSerivce(builder.Configuration.GetConnectionString("Blockchain"));
 
 var app = builder.Build();
+var blockchain = app.Services.GetRequiredService<BlockchainService>();
+await blockchain.InitializeAsync();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -1,4 +1,5 @@
-﻿@model IEnumerable<Blockchain_Example1.Models.Block>
+﻿@using Blockchain_Example1.Models.Contracts
+@model IEnumerable<Blockchain_Example1.Models.Block>
 
 @{
     ViewData["Title"] = "View";
@@ -35,6 +36,9 @@
 
 
 @await Html.PartialAsync("Components/_ControlButtons")
+
+
+
 @await Html.PartialAsync("Components/_WalletList")
 @await Html.PartialAsync("Components/_Mempool")
 

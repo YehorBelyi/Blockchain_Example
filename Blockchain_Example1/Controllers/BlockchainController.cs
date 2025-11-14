@@ -83,6 +83,11 @@ namespace Blockchain_Example1.Controllers
             ViewBag.Nodes = _nodeKeys.Keys.ToList();
             ViewBag.CurrentNodeId = nodeId;
 
+            ViewBag.Contracts = BlockchainService.Contracts;
+
+            ViewBag.PublicKeyWalletContract = service.PublicKeyXmlContractWallet;
+            ViewBag.PrivateKeyWalletContract = service.PrivateKeyXmlContractWallet;
+
             return View(chain);
 
         }

@@ -1,7 +1,9 @@
 ﻿using Blockchain_Example1.Models;
+using Blockchain_Example1.Models.Contracts;
 using Blockchain_Example1.Services;
 using Blockchain_Example1.Services.Repository;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using System.Net;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
@@ -22,6 +24,8 @@ namespace Blockchain_Example1.Services
         public string publicKey;
         public string PrivateKey { get => privateKey; set => privateKey = value; }
         public string PublicKeyXml { get => publicKey; set => publicKey = value; }
+        public string PrivateKeyXmlContractWallet { get; set; }
+        public string PublicKeyXmlContractWallet { get; set; }  
 
         // [27.10.25] Mining block
         public static int Difficulty { get; set; } = 1;
@@ -38,10 +42,12 @@ namespace Blockchain_Example1.Services
 
         // Dynamic change of difficulty while meaning to balance chain load
         private const int TargetBlockTimeSeconds = 10; // time to mine one block
-        private const int AdjustEveryBlocks = 10; // 
+        private const int AdjustEveryBlocks = 100; // 
         private const double Tolerance = 0.2; // +- 20%
 
         public double AverageMiningTime { get; set; }
+        public static Dictionary<string, ISmartContract> Contracts { get; } = new Dictionary<string, ISmartContract>(StringComparer.OrdinalIgnoreCase);
+
 
         public BlockchainService(IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository, RSAService rsaService, ILogger<BlockchainService> logger)
         {
@@ -57,6 +63,18 @@ namespace Blockchain_Example1.Services
             {
                 _blockRepository.CreateGenesisBlock(privateKey, publicKey);
             }
+
+            var rsa = RSA.Create();
+            PrivateKeyXmlContractWallet = rsa.ToXmlString(true);
+            PublicKeyXmlContractWallet = rsa.ToXmlString(false);
+        }
+
+        public async Task InitializeAsync()
+        { 
+            // Address for our contract
+            var timeLockContract = await RegisterWallet(PublicKeyXml, "Contract");
+            // Unlock transactions for this wallet after 50th block
+            Contracts[timeLockContract.Address] = new TimeLockContract(timeLockContract.Address, 50);
         }
 
         private async Task AdjustDifficultyIfNeeded()
@@ -128,6 +146,21 @@ namespace Blockchain_Example1.Services
             if (!rsa.VerifyData(payload, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
             {
                 throw new Exception("Invalid Transaction Signature");
+            }
+
+            // if this address belongs to smart contract, then:
+            if (Contracts.TryGetValue(transaction.FromAddress, out var contractFrom))
+            {
+                var countOfBlocks = await _blockRepository.GetCountOfBlocks();
+                var res = contractFrom.ValidateTranscation(this, transaction, countOfBlocks);
+
+                if (!res) return;
+            }
+
+            if (Contracts.TryGetValue(transaction.ToAddress, out var contractTo))
+            {
+                var countOfBlocks = await _blockRepository.GetCountOfBlocks();
+                contractTo.ValidateTranscation(this, transaction, countOfBlocks);
             }
 
             //Mempool.Add(transaction);

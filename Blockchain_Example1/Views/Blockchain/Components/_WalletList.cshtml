@@ -1,8 +1,12 @@
-﻿@{
+﻿@using Blockchain_Example1.Models.Contracts
+@{
     var wallets = ViewBag.Wallets as List<Wallet>;
     var balances = ViewBag.Balances as Dictionary<string, decimal>;
     string shortenString(string s, int n = 10) => s.Length > 10 ? s.Substring(0, n) + "..." : s;
     string? transactionError = TempData["TransactionError"] as string;
+
+
+    var contracts = ViewBag.Contracts as Dictionary<string, ISmartContract> ?? new Dictionary<string, ISmartContract>();
 }
 
 @if (!string.IsNullOrEmpty(transactionError))
@@ -33,7 +37,16 @@ else
             {
                 <tr>
                     <td><a asp-action="WalletDetails" asp-route-id="@wallet.Id">@wallet.Address</a></td>
-                    <td>@wallet.DisplayName</td>
+                    <td>
+                        @if (contracts != null && contracts.ContainsKey(wallet.Address))
+                        {
+                            <span class="badge text-bg-primary">Contract</span>
+                        }
+                        else
+                        {
+                            @wallet.DisplayName
+                        }
+                    </td>
                     @if (balances.ContainsKey(wallet.Address)) {
                         <td>@balances[wallet.Address]</td>
                     }
