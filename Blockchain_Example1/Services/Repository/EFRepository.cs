@@ -191,6 +191,36 @@ namespace Blockchain_Example1.Services.Repository
             await _context.SaveChangesAsync();
         }
 
+        public async Task ClearMempoolAsync(IEnumerable<Transaction> mempool)
+        {
+            await using var _context = _factory.CreateDbContext();
+            _context.Transactions.RemoveRange(mempool);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task RemoveTransactionsByIds(IEnumerable<int> transactionIds)
+        {
+            await using var _context = _factory.CreateDbContext();
+
+            var ids = transactionIds.Where(id => id > 0).ToList();
+
+            if (ids.Any())
+            {
+                await _context.Transactions
+                    .Where(t => ids.Contains(t.Id))
+                    .ExecuteDeleteAsync();
+            }
+        }
+
+        public async Task<List<Transaction>> GetMostValuableTranscations(int maxTransactionsPerBlock)
+        {
+            await using var _context = _factory.CreateDbContext();
+            return await _context.Transactions.Where(t => t.BlockId == null)
+                .OrderByDescending(t => t.Fee)
+                .Take(maxTransactionsPerBlock)
+                .ToListAsync();
+        }
+
         public async Task<bool> UpdateBlockWithTransactions(Block block)
         {
             try

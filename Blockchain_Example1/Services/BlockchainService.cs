@@ -30,6 +30,7 @@ namespace Blockchain_Example1.Services
         // [27.10.25] Mining block
         public static int Difficulty { get; set; } = 1;
         private static readonly SemaphoreSlim _chainLock = new(1, 1);
+        private static readonly SemaphoreSlim _txLock = new(1, 1);
 
         // [31.10.25] Transactions, mempool
         //public Dictionary<string, Wallet> Wallets { get; set; } = new Dictionary<string, Wallet>();
@@ -46,6 +47,7 @@ namespace Blockchain_Example1.Services
         private const double Tolerance = 0.2; // +- 20%
 
         public double AverageMiningTime { get; set; }
+        private const int MaxTransactionsPerBlock = 5;
         public static Dictionary<string, ISmartContract> Contracts { get; } = new Dictionary<string, ISmartContract>(StringComparer.OrdinalIgnoreCase);
 
 
@@ -128,43 +130,50 @@ namespace Blockchain_Example1.Services
 
         public async Task CreateTransaction(Transaction transaction)
         {
-            var rsa = RSA.Create();
-            //var wallet = Wallets[transaction.FromAddress];
-            var wallet = await _walletRepository.GetWalletByAddress(transaction.FromAddress);
-
-            var currentWalletBalance = await _walletRepository.GetWalletBalanceAsync(wallet.Address);
-
-            if (currentWalletBalance < (transaction.Amount + transaction.Fee))
+            await _txLock.WaitAsync();
+            try
             {
-                throw new Exception("Not enough coins on the balance!");
-            }
+                var rsa = RSA.Create();
+                //var wallet = Wallets[transaction.FromAddress];
+                var wallet = await _walletRepository.GetWalletByAddress(transaction.FromAddress);
 
-            rsa.FromXmlString(wallet.PublicKeyXml);
-            var payload = Encoding.UTF8.GetBytes(transaction.CanonicalPayload());
-            var sig = Convert.FromBase64String(transaction.Signature);
-            // Check if the signature is created by the user who owns it
-            if (!rsa.VerifyData(payload, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
+                var currentWalletBalance = await _walletRepository.GetWalletBalanceAsync(wallet.Address);
+
+                if (currentWalletBalance < (transaction.Amount + transaction.Fee))
+                {
+                    throw new Exception("Not enough coins on the balance!");
+                }
+
+                rsa.FromXmlString(wallet.PublicKeyXml);
+                var payload = Encoding.UTF8.GetBytes(transaction.CanonicalPayload());
+                var sig = Convert.FromBase64String(transaction.Signature);
+                // Check if the signature is created by the user who owns it
+                if (!rsa.VerifyData(payload, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
+                {
+                    throw new Exception("Invalid Transaction Signature");
+                }
+
+                // if this address belongs to smart contract, then:
+                if (Contracts.TryGetValue(transaction.FromAddress, out var contractFrom))
+                {
+                    var countOfBlocks = await _blockRepository.GetCountOfBlocks();
+                    var res = contractFrom.ValidateTranscation(this, transaction, countOfBlocks);
+
+                    if (!res) return;
+                }
+
+                if (Contracts.TryGetValue(transaction.ToAddress, out var contractTo))
+                {
+                    var countOfBlocks = await _blockRepository.GetCountOfBlocks();
+                    contractTo.ValidateTranscation(this, transaction, countOfBlocks);
+                }
+
+                //Mempool.Add(transaction);
+                await _transactionRepository.AddToMempoolAsync(transaction);
+            } finally
             {
-                throw new Exception("Invalid Transaction Signature");
+                _txLock.Release();
             }
-
-            // if this address belongs to smart contract, then:
-            if (Contracts.TryGetValue(transaction.FromAddress, out var contractFrom))
-            {
-                var countOfBlocks = await _blockRepository.GetCountOfBlocks();
-                var res = contractFrom.ValidateTranscation(this, transaction, countOfBlocks);
-
-                if (!res) return;
-            }
-
-            if (Contracts.TryGetValue(transaction.ToAddress, out var contractTo))
-            {
-                var countOfBlocks = await _blockRepository.GetCountOfBlocks();
-                contractTo.ValidateTranscation(this, transaction, countOfBlocks);
-            }
-
-            //Mempool.Add(transaction);
-            await _transactionRepository.AddToMempoolAsync(transaction);
         }
 
         public async Task<Block> MinePending(string privateKey)
@@ -180,7 +189,7 @@ namespace Blockchain_Example1.Services
                     .FirstOrDefault(w => w.PublicKeyXml == minerPublicKeyXml)?.Address;
 
                 // Getting mempool straight from database
-                var mempool = await _transactionRepository.GetMempoolAsync();
+                var mempool = await _transactionRepository.GetMostValuableTranscations(MaxTransactionsPerBlock);
 
                 // Fee from all transactions for mining
                 decimal totalFee = mempool.Sum(t => t.Fee);
@@ -194,8 +203,8 @@ namespace Blockchain_Example1.Services
                 {
                     FromAddress = "COINBASE",
                     ToAddress = minerAddress,
-                    Amount = GetCurrentBlockReward(newBlock.Index) + totalFee,
-                    BlockId = newBlock.Index 
+                    Amount = GetCurrentBlockReward(previousBlock.Index + 1) + totalFee,
+                    BlockId = newBlock.Index
                 };
 
                 var allTransactions = new List<Transaction> { coinbaseTransaction };
@@ -206,7 +215,7 @@ namespace Blockchain_Example1.Services
                     tx.BlockId = newBlock.Index;
                 }
 
-                
+
                 newBlock.SetTransaction(allTransactions);
 
                 await newBlock.MineAsync(Difficulty);
@@ -214,8 +223,6 @@ namespace Blockchain_Example1.Services
                 newBlock.Sign(privateKey, minerPublicKeyXml);
                 newBlock.IsMined = true;
                 await _blockRepository.UpdateBlockWithTransactions(newBlock);
-
-                await _transactionRepository.ClearMempoolAsync();
 
                 return newBlock;
             }
@@ -510,7 +517,13 @@ namespace Blockchain_Example1.Services
                         _logger.LogWarning($"Hash mismatch at block {currBlock.Index}.");
                         return false;
                     }
+
+                    
                 }
+
+                var currentWork = ComputeTotalWork(currentChain);
+                var newWork = ComputeTotalWork(externalChain);
+                if (newWork <= currentWork) return false;
 
                 // If external chain is valid, update local chain that is in database
                 foreach (var block in currentChain)
@@ -565,6 +578,16 @@ namespace Blockchain_Example1.Services
         {
             return await _blockRepository.GetLastBlock();
         }
+
+        private static double ComputeTotalWork(List<Block> chain)
+        {
+            double totalWork = 0;
+            foreach (var block in chain)
+            {
+                totalWork += Math.Pow(2, block.Difficulty);
+            }
+            return totalWork;
+        } 
 
         // [10.11.25] Halving
         public decimal GetCurrentBlockReward(int newBlockIndex)

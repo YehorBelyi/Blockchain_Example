@@ -28,7 +28,13 @@ namespace Blockchain_Example1.Services.Repository
 
         Task AddToMempoolAsync(Transaction transaction);
 
+        Task RemoveTransactionsByIds(IEnumerable<int> transactionIds);
+
+        Task ClearMempoolAsync(IEnumerable<Transaction> mempool);
+
         Task ClearMempoolAsync();
+
+        Task<List<Transaction>> GetMostValuableTranscations(int maxTranscationsPerBlock);
 
         Task<decimal> GetWalletBalanceAsync(string address);
 

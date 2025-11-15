@@ -239,27 +239,33 @@ namespace Blockchain_Example1.Controllers
             decimal amount = 2.0m;
             decimal fee = 0.5m;
 
-            var tx = new Transaction
-            {
-                FromAddress = Ivan.Address,
-                ToAddress = Taras.Address,
-                Amount = amount,
-                Fee = fee,
-                Note = "Test payment service"
-            };
+
 
             // Getting some coins for test users so their balance won't be 0
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 30; i++)
             {
                 await MinePending(privateKey1, nodeId);
                 await MinePending(privateKey2, nodeId);
             }
 
-            var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
+            for (int i = 0; i < 12; i++)
+            {
+                var tx = new Transaction
+                {
+                    FromAddress = Ivan.Address,
+                    ToAddress = Taras.Address,
+                    Amount = amount,
+                    Fee = fee,
+                    Note = "Test payment service"
+                };
 
-            tx.Signature = sig;
+                var sig = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey1);
 
-            await service.CreateTransaction(tx);
+                tx.Signature = sig;
+
+                await service.CreateTransaction(tx);
+            }
+
             return RedirectToAction("Index", new { nodeId });
 
         }
@@ -315,6 +321,8 @@ namespace Blockchain_Example1.Controllers
         [HttpPost]
         public async Task<IActionResult> BroadcastLastBlock(string fromNodeId)
         {
+            //await Task.Delay(new Random().Next(5000, 15000));
+
             BlockchainService fromNodeService;
             GetNodeScope(fromNodeId, out fromNodeService);
 
