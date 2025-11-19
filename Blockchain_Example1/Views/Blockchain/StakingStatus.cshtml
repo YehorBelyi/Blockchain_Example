@@ -1,0 +1,64 @@
+﻿@using Blockchain_Example1.Services
+@model IEnumerable<Blockchain_Example1.ViewModels.StakeUserStatus>
+
+@{
+    ViewData["Title"] = "Penalty Staking Status";
+    var currentBlock = ViewBag.CurrentBlock;
+    var nodeId = ViewBag.NodeId;
+
+    string GetStatusText(bool isLocked) => isLocked ? "🚫 Blocked (Penalty)" : "✅ Available (Without penalty)";
+    string GetStatusClass(bool isLocked) => isLocked ? "table-danger" : "table-success";
+    string ShortenAddress(string address) => address.Length > 20 ? address.Substring(0, 10) + "..." + address.Substring(address.Length - 10) : address;
+}
+
+<h2>💰 Penalty Staking Status (@BlockchainService.StakingContractAddress)</h2>
+<p>Current block: <strong>@currentBlock</strong> | Node: <strong>@nodeId</strong></p>
+<hr />
+
+<table class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>User Address</th>
+            <th>Staked</th>
+            <th>Start Block</th>
+            <th>Blocks after staking</th>
+            <th>Status</th>
+            <th>Available for withdraw (Payout)</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="6" class="text-center">No active stakes.</td>
+            </tr>
+        }
+        @foreach (var status in Model.OrderByDescending(s => s.PrincipalAmount))
+        {
+            <tr class="@GetStatusClass(status.IsLocked)">
+                <td>
+                    <a href="@Url.Action("WalletDetails", new { id = 1, nodeId = nodeId })">@ShortenAddress(status.UserAddress)</a>
+                </td>
+                <td><strong>@status.PrincipalAmount.ToString("N4")</strong></td>
+                <td>@status.StartBlock</td>
+                <td>@status.HeldBlocks</td>
+                <td>@GetStatusText(status.IsLocked)</td>
+                <td>
+                    <strong>@status.CurrentPayout.ToString("N4")</strong>
+                    @if (status.CurrentPayout < status.PrincipalAmount)
+                    {
+                        <span class="badge bg-danger"> (Penalty: @(status.PrincipalAmount - status.CurrentPayout) coins)</span>
+                    }
+                    else if (status.CurrentPayout > status.PrincipalAmount)
+                    {
+                        <span class="badge bg-success"> (Rewards: @(status.CurrentPayout - status.PrincipalAmount) coins)</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="mt-4">
+    <a asp-action="Index" asp-route-nodeId="@nodeId" class="btn btn-secondary">Go back</a>
+</div>

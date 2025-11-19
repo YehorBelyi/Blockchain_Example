@@ -15,6 +15,14 @@
     <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#mempoolModal">
         Use Mempool
     </button>
+    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#mempoolModal">
+        Use Mempool
+    </button>
+    <a asp-action="StakingStatus">
+        <button type="button" class="btn btn-success">
+            Staking Status
+        </button>
+    </a>
     <form method="post" asp-action="DemoSetup">
         <input type="hidden" name="nodeId" value="@nodeId"/>
         <button type="submit" class="btn btn-danger">

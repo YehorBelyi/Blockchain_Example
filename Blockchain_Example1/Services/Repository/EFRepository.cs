@@ -98,7 +98,7 @@ namespace Blockchain_Example1.Services.Repository
                 .ToListAsync();
         }
 
-        public async Task<Block?> GetLastBlock()
+        public async Task<Block> GetLastBlock()
         {
             await using var _context = _factory.CreateDbContext();
             return await _context.Blocks

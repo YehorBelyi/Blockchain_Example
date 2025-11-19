@@ -5,6 +5,8 @@
     ViewData["Title"] = "View";
     var nodeId = ViewBag.CurrentNodeId as string ?? "A";
     var nodes = ViewBag.Nodes as List<string> ?? new List<string>();
+
+    var stakingAddress = ViewBag.StakingAddress as string;
 }
 
 <div>
@@ -37,7 +39,77 @@
 
 @await Html.PartialAsync("Components/_ControlButtons")
 
+@if (!string.IsNullOrEmpty(stakingAddress))
+{
+    <div class="row mb-5">
 
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5>Stake</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="Stake">
+                        <input type="hidden" value="@nodeId" name="nodeId" />
+
+                        <div class="mb-3">
+                            <label class="form-label">From Address</label>
+                            <input type="text" name="fromAddress" class="form-control" placeholder="ADDR_....." required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" name="amount" class="form-control" placeholder="10.0" min="0.01" step="0.01" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Private key</label>
+                            <input type="text" name="privateKey" class="form-control" placeholder="Private Key XML" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Fee</label>
+                            <input type="text" name="fee" class="form-control" placeholder="0.5" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">
+                            Stake
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5>Withdraw from stake</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="WithdrawFromStake">
+                        <input type="hidden" value="@nodeId" name="nodeId" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Your Address</label>
+                            <input type="text" name="userAddress" class="form-control" placeholder="ADDR_....." required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" name="amount" class="form-control" placeholder="Amount" min="0.01" step="0.01" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100">
+                            Withdraw
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<hr />
 
 @await Html.PartialAsync("Components/_WalletList")
 @await Html.PartialAsync("Components/_Mempool")

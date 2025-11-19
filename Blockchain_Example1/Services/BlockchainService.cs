@@ -24,8 +24,8 @@ namespace Blockchain_Example1.Services
         public string publicKey;
         public string PrivateKey { get => privateKey; set => privateKey = value; }
         public string PublicKeyXml { get => publicKey; set => publicKey = value; }
-        public string PrivateKeyXmlContractWallet { get; set; }
-        public string PublicKeyXmlContractWallet { get; set; }  
+        public static string PrivateKeyXmlContractWallet { get; set; }
+        public static string PublicKeyXmlContractWallet { get; set; }  
 
         // [27.10.25] Mining block
         public static int Difficulty { get; set; } = 1;
@@ -50,11 +50,15 @@ namespace Blockchain_Example1.Services
         private const int MaxTransactionsPerBlock = 5;
         public static Dictionary<string, ISmartContract> Contracts { get; } = new Dictionary<string, ISmartContract>(StringComparer.OrdinalIgnoreCase);
 
+        // [17.11.25] Staking
+        public static string StakingContractAddress { get; set; }
+
 
         public BlockchainService(IRepository<Block> blockRepository, IRepository<Wallet> walletRepository, IRepository<Transaction> transactionRepository, RSAService rsaService, ILogger<BlockchainService> logger)
         {
             _rsaService = rsaService ?? new RSAService();
             (privateKey, publicKey) = _rsaService.GetRSAKeys();
+            (PrivateKeyXmlContractWallet, PublicKeyXmlContractWallet) = _rsaService.GetContractRSAKeys();
 
             _blockRepository = blockRepository;
             _walletRepository = walletRepository;
@@ -65,18 +69,24 @@ namespace Blockchain_Example1.Services
             {
                 _blockRepository.CreateGenesisBlock(privateKey, publicKey);
             }
-
-            var rsa = RSA.Create();
-            PrivateKeyXmlContractWallet = rsa.ToXmlString(true);
-            PublicKeyXmlContractWallet = rsa.ToXmlString(false);
         }
 
+        //// TimeLockContract
+        //public async Task InitializeAsync()
+        //{ 
+        //    // Address for our contract
+        //    var timeLockContract = await RegisterWallet(PublicKeyXml, "Contract");
+        //    // Unlock transactions for this wallet after 50th block
+        //    Contracts[timeLockContract.Address] = new TimeLockContract(timeLockContract.Address, 50);
+        //}
+
+        // StakingContract
         public async Task InitializeAsync()
-        { 
-            // Address for our contract
-            var timeLockContract = await RegisterWallet(PublicKeyXml, "Contract");
-            // Unlock transactions for this wallet after 50th block
-            Contracts[timeLockContract.Address] = new TimeLockContract(timeLockContract.Address, 50);
+        {
+            var stakingWallet = await RegisterWallet(PublicKeyXmlContractWallet, "Staking Contract Wallet");
+            StakingContractAddress = stakingWallet.Address;
+
+            Contracts[StakingContractAddress] = new PenaltyStakingContract(StakingContractAddress, 0.005m, 20, 0.20m);
         }
 
         private async Task AdjustDifficultyIfNeeded()
@@ -128,6 +138,25 @@ namespace Blockchain_Example1.Services
             return wallet;
         }
 
+        public decimal GetRewardForMiningBlock(string userAddress, int blockIndex)
+        {
+            if (!Contracts.Any())
+            {
+                return 0m;
+            }
+
+            var contractBase = Contracts.Values.First();
+
+            if (contractBase is PenaltyStakingContract stakingContract)
+            {
+                var stakeInfo = stakingContract.GetStakeInfo(userAddress, blockIndex);
+
+                return stakeInfo.Reward;
+            }
+
+            return 0m;
+        }
+
         public async Task CreateTransaction(Transaction transaction)
         {
             await _txLock.WaitAsync();
@@ -137,11 +166,17 @@ namespace Blockchain_Example1.Services
                 //var wallet = Wallets[transaction.FromAddress];
                 var wallet = await _walletRepository.GetWalletByAddress(transaction.FromAddress);
 
+                bool isFromContract = Contracts.ContainsKey(transaction.FromAddress);
+                bool isCoinbase = string.Equals(transaction.FromAddress, "COINBASE", StringComparison.OrdinalIgnoreCase);
+
                 var currentWalletBalance = await _walletRepository.GetWalletBalanceAsync(wallet.Address);
 
-                if (currentWalletBalance < (transaction.Amount + transaction.Fee))
+                if (!isFromContract && !isCoinbase)
                 {
-                    throw new Exception("Not enough coins on the balance!");
+                    if (currentWalletBalance < (transaction.Amount + transaction.Fee))
+                    {
+                        throw new Exception("Not enough coins on the balance!");
+                    }
                 }
 
                 rsa.FromXmlString(wallet.PublicKeyXml);
@@ -574,7 +609,7 @@ namespace Blockchain_Example1.Services
             return (wallet, balance, transactions);
         }
 
-        public async Task<Block?> GetLastBlock()
+        public async Task<Block> GetLastBlock()
         {
             return await _blockRepository.GetLastBlock();
         }
@@ -604,6 +639,53 @@ namespace Blockchain_Example1.Services
             }
 
             return reward;
+        }
+
+        public async Task<List<ViewModels.StakeUserStatus>> GetPenaltyStakingStatus()
+        {
+            var statusList = new List<ViewModels.StakeUserStatus>();
+
+            if (!Contracts.TryGetValue(StakingContractAddress, out var contractBase) || contractBase is not PenaltyStakingContract penaltyContract)
+            {
+                return statusList;
+            }
+
+            var lastBlock = await GetLastBlock();
+            int currentBlockIndex = lastBlock?.Index ?? 0;
+
+            var stakeRecords = penaltyContract.GetStakeRecords();
+
+            foreach (var recordEntry in stakeRecords)
+            {
+                var userAddress = recordEntry.Key;
+                var record = recordEntry.Value;
+
+                var (principal, reward, heldBlocks, isLocked) = penaltyContract.GetStakeInfo(userAddress, currentBlockIndex);
+
+                decimal finalPayout;
+
+                if (isLocked)
+                {
+                    decimal penaltyAmount = principal * penaltyContract.EarlyPenaltyPercent;
+                    finalPayout = principal - penaltyAmount + reward;
+                }
+                else
+                {
+                    finalPayout = principal + reward;
+                }
+
+                statusList.Add(new ViewModels.StakeUserStatus
+                {
+                    UserAddress = userAddress,
+                    PrincipalAmount = principal,
+                    StartBlock = record.StartBlock,
+                    HeldBlocks = heldBlocks,
+                    IsLocked = isLocked,
+                    CurrentPayout = finalPayout
+                });
+            }
+
+            return statusList;
         }
     }
 }

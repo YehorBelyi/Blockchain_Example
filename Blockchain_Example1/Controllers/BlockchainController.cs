@@ -85,8 +85,9 @@ namespace Blockchain_Example1.Controllers
 
             ViewBag.Contracts = BlockchainService.Contracts;
 
-            ViewBag.PublicKeyWalletContract = service.PublicKeyXmlContractWallet;
-            ViewBag.PrivateKeyWalletContract = service.PrivateKeyXmlContractWallet;
+            ViewBag.PublicKeyWalletContract = BlockchainService.PublicKeyXmlContractWallet;
+            ViewBag.PrivateKeyWalletContract = BlockchainService.PrivateKeyXmlContractWallet;
+            ViewBag.StakingAddress = BlockchainService.StakingContractAddress;
 
             return View(chain);
 
@@ -355,6 +356,76 @@ namespace Blockchain_Example1.Controllers
             return RedirectToAction("Index", new { nodeId = fromNodeId });
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Stake(string fromAddress, decimal amount, decimal fee, string privateKey, string nodeId)
+        {
+            try
+            {
+                BlockchainService service;
+                GetNodeScope(nodeId, out service);
+                var tx = new Transaction
+                {
+                    FromAddress = fromAddress,
+                    ToAddress = BlockchainService.StakingContractAddress,
+                    Amount = amount,
+                    Fee = fee,
+                    Note = "Stake tokens"
+                };
 
+                tx.Signature = BlockchainService.SignPayload(tx.CanonicalPayload(), privateKey);
+                await service.CreateTransaction(tx);
+            }
+            catch (Exception ex)
+            {
+                TempData["TransactionError"] = ex.Message;
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> WithdrawFromStake(string userAddress, decimal amount, string nodeId)
+        {
+            BlockchainService service;
+            GetNodeScope(nodeId, out service);
+
+            try
+            {
+                var lastBlockIndex = await service.GetLastBlock();
+                var reward = service.GetRewardForMiningBlock(userAddress, lastBlockIndex.Index);
+                var tx = new Transaction
+                {
+                    FromAddress = BlockchainService.StakingContractAddress,
+                    ToAddress = userAddress,
+                    Amount = amount + reward,
+                    Fee = 0.0m,
+                    Note = "Stake tokens"
+                };
+
+                tx.Signature = BlockchainService.SignPayload(tx.CanonicalPayload(), BlockchainService.PrivateKeyXmlContractWallet);
+
+                await service.CreateTransaction(tx);
+        } catch (Exception ex)
+            {
+                //TempData["Error"] = ex.Message;
+                throw new Exception(ex.Message);
+            }
+
+            return RedirectToAction("Index", new {nodeId});
+        }
+
+        public async Task<IActionResult> StakingStatus(string nodeId)
+        {
+            BlockchainService service;
+            GetNodeScope(nodeId, out service);
+
+            var statusList = await service.GetPenaltyStakingStatus();
+
+            var lastBlock = await service.GetLastBlock();
+
+            ViewBag.CurrentBlock = lastBlock?.Index ?? 0;
+            ViewBag.NodeId = nodeId;
+
+            return View(statusList);
+        }
     }
 }
